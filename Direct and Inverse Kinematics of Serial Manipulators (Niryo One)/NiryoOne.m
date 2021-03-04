@@ -33,12 +33,6 @@ body6 = rigidBody('Mesh');
 jnt6 = rigidBodyJoint('jnt6','revolute');
 addVisual(body6,"Mesh","STL/Hand.stl");
 
-% setFixedTransform(jnt2,dhparams(2,:),'dh');
-% setFixedTransform(jnt3,dhparams(3,:),'dh');
-% setFixedTransform(jnt4,dhparams(4,:),'dh');
-% setFixedTransform(jnt5,dhparams(5,:),'dh');
-% setFixedTransform(jnt6,dhparams(6,:),'dh');
-
 body1.Joint = jnt1;
 body2.Joint = jnt2;
 body3.Joint = jnt3;
@@ -53,22 +47,20 @@ addBody(robot,body4,'Elbow')
 addBody(robot,body5,'Forearm')
 addBody(robot,body6,'Wrist')
 
+% robot_images = show(robot);
+% robot_images.Units = "centimeters";
+% robot_images.XLimMode = "auto";
+% robot_images.YLimMode = "auto";
+% robot_images.ZLimMode = "auto";
+showdetails(robot);
 
-% body.Joint = rigidBodyJoint('Forearm','revolute');
-% addBody(robot,body,'Forearm');
-% addVisual(robot.Base,"Mesh","STL/Forearm.stl");
-% 
-% body.Joint = rigidBodyJoint('Wrist','revolute');
-% addBody(robot,body,'Wrist');
-% addVisual(robot.Base,"Mesh","STL/Wrist.stl");
-% 
-% body.Joint = rigidBodyJoint('Hand','revolute');
-% addBody(robot,body,'Hand');
-% addVisual(robot.Base,"Mesh","STL/Hand.stl");
+config = homeConfiguration(robot)
+config(2).JointPosition = pi/2
+config(1).JointPosition = pi/2
 
-robot_images = show(robot);
+robot_images = show(robot, config);
 robot_images.Units = "centimeters";
 robot_images.XLimMode = "auto";
 robot_images.YLimMode = "auto";
 robot_images.ZLimMode = "auto";
-showdetails(robot);
+
