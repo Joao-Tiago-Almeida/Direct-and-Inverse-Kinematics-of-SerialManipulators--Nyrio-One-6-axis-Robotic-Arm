@@ -5,46 +5,47 @@ clc
 
 robot = rigidBodyTree; % rigid body tree
 
+
 %% Robot construction
 
 body0 = rigidBody('Support');
-%addVisual(body0,"Mesh","STL/Base.stl")
+addVisual(body0,"Mesh","STL/Base.stl")
 
 jnt1 = rigidBodyJoint('Support-Shoulder','revolute');
 jnt1.JointAxis = [0 0 1];
 
 body1 = rigidBody('Shoulder');
-%addVisual(body1,"Mesh","STL/Shoulder.stl");
+addVisual(body1,"Mesh","STL/Shoulder.stl");
 
 jnt2 = rigidBodyJoint('Shoulder-Arm','revolute');
 jnt2.JointAxis = [0 1 0];
 
 body2 = rigidBody('Arm');
-%addVisual(body2,"Mesh","STL/ARM.stl");
+addVisual(body2,"Mesh","STL/ARM.stl");
 
 jnt3 = rigidBodyJoint('Arm-Elbow','revolute');
 jnt3.JointAxis = [0 1 0];
 
 body3 = rigidBody('Elbow');
-%addVisual(body3,"Mesh","STL/Elbow.stl") ;
+addVisual(body3,"Mesh","STL/Elbow.stl") ;
 
 jnt4 = rigidBodyJoint('Elbow-Forearm','revolute');
 jnt4.JointAxis = [1 0 0];
 
 body4 = rigidBody('Forearm');
-%addVisual(body4,"Mesh","STL/Forearm.stl");
+addVisual(body4,"Mesh","STL/Forearm.stl");
 
 jnt5 = rigidBodyJoint('Forearm-Wrist','revolute');
 jnt5.JointAxis = [0 1 0];
 
 body5 = rigidBody('Wrist');
-%addVisual(body5,"Mesh","STL/Wrist.stl");
+addVisual(body5,"Mesh","STL/Wrist.stl");
 
 jnt6 = rigidBodyJoint('Wirst-Hand','revolute');
 jnt6.JointAxis = [1 0 0];
 
 body6 = rigidBody('Hand');
-%addVisual(body6,"Mesh","STL/Hand.stl");
+addVisual(body6,"Mesh","STL/Hand.stl");
 
 dhparams = [0       0   	10.3    0;
             0       0   	8       0;
@@ -53,12 +54,12 @@ dhparams = [0       0   	10.3    0;
             18      0   	0       0;
             2.37    0   	-0.55   0];
 
-setFixedTransform(jnt1,dhparams(1,:),'dh');
-setFixedTransform(jnt2,dhparams(2,:),'dh');
-setFixedTransform(jnt3,dhparams(3,:),'dh');
-setFixedTransform(jnt4,dhparams(4,:),'dh');
-setFixedTransform(jnt5,dhparams(5,:),'dh');
-setFixedTransform(jnt6,dhparams(6,:),'dh');
+setFixedTransform(jnt1,dhparams(1,:),'mdh');
+setFixedTransform(jnt2,dhparams(2,:),'mdh');
+setFixedTransform(jnt3,dhparams(3,:),'mdh');
+setFixedTransform(jnt4,dhparams(4,:),'mdh');
+setFixedTransform(jnt5,dhparams(5,:),'mdh');
+setFixedTransform(jnt6,dhparams(6,:),'mdh');
 
 body1.Joint = jnt1;
 body2.Joint = jnt2;
