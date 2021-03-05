@@ -86,6 +86,7 @@ robot_images.XLimMode = "auto";
 robot_images.YLimMode = "auto";
 robot_images.ZLimMode = "auto";
 
+
 %%
 figure
 config = homeConfiguration(robot)
@@ -97,4 +98,13 @@ robot_images.Units = "centimeters";
 robot_images.XLimMode = "auto";
 robot_images.YLimMode = "auto";
 robot_images.ZLimMode = "auto";
+
+
+%% final position
+
+pos = getTransform(robot,config,'Hand'); pos = pos(1:3,4);
+
+hold on
+plot3(pos(1), pos(2), pos(3), 'o','Color','b','MarkerSize',10,'MarkerFaceColor','#D9FFFF');
+
 
