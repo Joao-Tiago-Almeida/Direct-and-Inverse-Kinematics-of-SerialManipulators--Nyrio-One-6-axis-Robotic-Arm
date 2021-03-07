@@ -4,7 +4,7 @@ clc
 
 niryo_one( [ 0
              0
-             pi/2
+             0
              0
              0
              0 ] )
@@ -23,12 +23,12 @@ function niryo_one(mov)
     body1 = rigidBody('Shoulder');
     
     jnt2 = rigidBodyJoint('Shoulder-Arm','revolute');
-    jnt2.JointAxis = [0 1 0];
+    jnt2.JointAxis = [0 -1 0];
     
     body2 = rigidBody('Arm');
     
     jnt3 = rigidBodyJoint('Arm-Elbow','revolute');
-    jnt3.JointAxis = [0 -1 0];
+    jnt3.JointAxis = [0 1 0];
 
     body3 = rigidBody('Elbow');
     
@@ -95,10 +95,10 @@ function niryo_one(mov)
     %% Movement
     
     range_rotation = [-175, 175
-                      -36.7, 90
+                      -90, 36.7
                       -80, 90
                       -175, 175
-                      -110, 100
+                      -10, 110
                       -147.5, 147.5]*pi/180;
                     
     config = homeConfiguration(robot)
@@ -148,5 +148,4 @@ function niryo_one(mov)
     hold on
     plot3(pos(1), pos(2), pos(3), 'o','Color','b','MarkerSize',10,'MarkerFaceColor','#D9FFFF');
 
-breakpoint
 end
