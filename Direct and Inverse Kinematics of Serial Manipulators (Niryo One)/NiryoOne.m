@@ -3,7 +3,7 @@ clear
 clc
 
 niryo_one( [ 0
-             0
+             pi/4
              0
              0
              0
@@ -23,7 +23,7 @@ function niryo_one(mov)
     body1 = rigidBody('Shoulder');
     
     jnt2 = rigidBodyJoint('Shoulder-Arm','revolute');
-    jnt2.JointAxis = [0 -1 0];
+    jnt2.JointAxis = [0 1 0];
     
     body2 = rigidBody('Arm');
     
@@ -38,7 +38,7 @@ function niryo_one(mov)
     body4 = rigidBody('Forearm');
     
     jnt5 = rigidBodyJoint('Forearm-Wrist','revolute');
-    jnt5.JointAxis = [0 -1 0];
+    jnt5.JointAxis = [0 1 0];
     
     body5 = rigidBody('Wrist');
     
@@ -95,10 +95,10 @@ function niryo_one(mov)
     %% Movement
     
     range_rotation = [-175, 175
-                      -90, 36.7
+                      -36.7, 90
                       -80, 90
                       -175, 175
-                      -10, 110
+                      -110, 100
                       -147.5, 147.5]*pi/180;
                     
     config = homeConfiguration(robot)
@@ -143,7 +143,7 @@ function niryo_one(mov)
     
     %% final position
 
-    pos = getTransform(robot,config,'Hand'); pos = pos(1:3,4);
+    pos = getTransform(robot,config,'Arm'); pos = pos(1:3,4)
 
     hold on
     plot3(pos(1), pos(2), pos(3), 'o','Color','b','MarkerSize',10,'MarkerFaceColor','#D9FFFF');
