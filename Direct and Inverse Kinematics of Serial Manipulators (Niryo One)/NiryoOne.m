@@ -1,10 +1,10 @@
-close all
-clear
-clc
+% close all
+% clear
+% clc
 
 niryo_one( [ 0
-             pi/4
              0
+             -pi/2
              0
              0
              0 ] )
@@ -143,7 +143,7 @@ function niryo_one(mov)
     
     %% final position
 
-    pos = getTransform(robot,config,'Arm'); pos = pos(1:3,4)
+    pos = getTransform(robot,config,'Hand'); pos = pos(1:3,4)
 
     hold on
     plot3(pos(1), pos(2), pos(3), 'o','Color','b','MarkerSize',10,'MarkerFaceColor','#D9FFFF');
