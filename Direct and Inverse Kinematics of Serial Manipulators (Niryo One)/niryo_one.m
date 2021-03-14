@@ -1,15 +1,5 @@
-% close all
-% clear
-% clc
+function pos = niryo_one(mov)
 
-niryo_one( [ 0
-             0
-             -pi/2
-             0
-             0
-             0 ] )
-
-function niryo_one(mov)
     robot = rigidBodyTree; % rigid body tree
 
 
@@ -90,7 +80,7 @@ function niryo_one(mov)
     addBody(robot,body5,'Forearm')
     addBody(robot,body6,'Wrist')
 
-    showdetails(robot);
+    %showdetails(robot);
 
     %% Movement
     
@@ -101,51 +91,51 @@ function niryo_one(mov)
                       -110, 100
                       -147.5, 147.5]*pi/180;
                     
-    config = homeConfiguration(robot)
+    config = homeConfiguration(robot);
     
         % bound to max angle rotation      
     for i = 1:6
         config(i).JointPosition = max( range_rotation(i,1), mov(i) );
-        config(i).JointPosition = min( range_rotation(i,2), mov(i) );
+        config(i).JointPosition = min( range_rotation(i,2), config(i).JointPosition );
     end
-
-    %% plot figure
-    
-    f = figure
-    tit1 = "Niryo One positions, after a movement.";
-    tit2 = "J1 = " + num2str(mov(1)) + " rad;   J2 = " + num2str(mov(2)) + " rad;   J3 = " + num2str(mov(3)) + " rad;   J4 = " + num2str(mov(4)) + " rad;   J5 = " + num2str(mov(5)) + " rad;   J6 = " + num2str(mov(6)) + " rad;";
-        
-    suptitle([tit1 tit2])
-    
-    hold on
-    f.Position(3) = 2*f.Position(3);
-    
-    subplot(1,2,1);
-    
-    robot_relax = show(robot);
-    robot_relax.Units = "centimeters";
-    robot_relax.XLimMode = "auto";
-    robot_relax.YLimMode = "auto";
-    robot_relax.ZLimMode = "auto";
-    
-    title("Relax Position");
-    
-    subplot(1,2,2);
-    
-    robot_action = show(robot, config);
-    robot_action.Units = "centimeters";
-    robot_action.XLimMode = "auto";
-    robot_action.YLimMode = "auto";
-    robot_action.ZLimMode = "auto";
-    
-    title("Action Position");
-    
-    
+% 
+%     %% plot figure
+%     
+%     f = figure;
+%     tit1 = "Niryo One positions, after a movement.";
+%     tit2 = "J1 = " + num2str(mov(1)) + " rad;   J2 = " + num2str(mov(2)) + " rad;   J3 = " + num2str(mov(3)) + " rad;   J4 = " + num2str(mov(4)) + " rad;   J5 = " + num2str(mov(5)) + " rad;   J6 = " + num2str(mov(6)) + " rad;";
+%         
+%     suptitle([tit1 tit2])
+%     
+%     hold on
+%     f.Position(3) = 2*f.Position(3);
+%     
+%     subplot(1,2,1);
+%     
+%     robot_relax = show(robot);
+%     robot_relax.Units = "centimeters";
+%     robot_relax.XLimMode = "auto";
+%     robot_relax.YLimMode = "auto";
+%     robot_relax.ZLimMode = "auto";
+%     
+%     title("Relax Position");
+%     
+%     subplot(1,2,2);
+%     
+%     robot_action = show(robot, config);
+%     robot_action.Units = "centimeters";
+%     robot_action.XLimMode = "auto";
+%     robot_action.YLimMode = "auto";
+%     robot_action.ZLimMode = "auto";
+%     
+%     title("Action Position");
+%     
+%     
     %% final position
 
-    pos = getTransform(robot,config,'Hand'); pos = pos(1:3,4)
+    pos = getTransform(robot,config,'Wrist'); pos = pos(1:3,4);
 
-    hold on
-    plot3(pos(1), pos(2), pos(3), 'o','Color','b','MarkerSize',10,'MarkerFaceColor','#D9FFFF');
+%     hold on
+%     plot3(pos(1), pos(2), pos(3), 'o','Color','b','MarkerSize',10,'MarkerFaceColor','#D9FFFF');
 
 end
