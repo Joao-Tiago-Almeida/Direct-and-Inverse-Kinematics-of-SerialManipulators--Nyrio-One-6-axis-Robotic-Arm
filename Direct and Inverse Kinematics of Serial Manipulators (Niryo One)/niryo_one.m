@@ -52,7 +52,7 @@ function pos = niryo_one(mov)
                 0       0   	21      0;
                 4.15    0   	3       0;
                 18      0   	0       0;
-                2.37    0   	-0.55   0];
+                2.37    0   	0   0];%-0.55
     
     % place spatial the joints
     setFixedTransform(jnt1,dhparams(1,:),'mdh');

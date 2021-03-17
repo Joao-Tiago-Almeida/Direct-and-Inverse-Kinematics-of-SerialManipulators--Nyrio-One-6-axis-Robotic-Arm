@@ -56,7 +56,7 @@ function output = direct_transform(A)
                 ];
       F5_to_F6 = [1,    0,          0       ,   2.37;
                   0,    cos(A6),    -sin(A6),   0;
-                  0,    sin(A6),    cos(A6),    -0.55;
+                  0,    sin(A6),    cos(A6),    0; %-0.55
                   0,    0,          0,          1      
                 ];
       
@@ -70,20 +70,23 @@ function output = direct_transform(A)
 end
 
 function out = get_orientation(matrix)
-
-    beta = atan2(sqrt(matrix(1,3)^2 + matrix(2, 3)^2), matrix(3,3));
-    alpha = 0;
-    gama = 0;
+    
+    alpha = 0;                                                          % Z
+    beta = atan2(sqrt(matrix(1,3)^2 + matrix(2, 3)^2), matrix(3,3));    % Y
+    gama = 0;                                                           % Z
     
     if beta == pi/2
         gama = atan2(matrix(2,1), matrix(1,1));
         
     elseif beta == -pi/2
-        gama = atan2(matrix(2,1), matrix(1,1));
+        gama = -atan2(matrix(2,1), matrix(1,1));
         
+    elseif beta == 0    % perguntar ao stor
+        gama = 0;
+        alpha = cos(beta)*atan2(matrix(2,1), matrix(1,1)); % cos(beta) -> ±1
     else
         alpha = atan2(matrix(2,3)/sin(beta), matrix(1,3)/sin(beta));
-        gama = atan2(matrix(3,2)/sin(beta), -matrix(1,3)/sin(beta));
+        gama = atan2(matrix(3,2)/sin(beta), -matrix(3,1)/sin(beta));
     end
         
     out = [alpha beta gama];
