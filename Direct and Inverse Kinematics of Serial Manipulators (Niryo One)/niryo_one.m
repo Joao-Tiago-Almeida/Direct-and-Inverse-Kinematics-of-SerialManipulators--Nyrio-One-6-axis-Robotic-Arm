@@ -84,7 +84,7 @@ function pos = niryo_one(mov)
 
     %% Movement
     
-    range_rotation = [-175, 175
+    range_rotation = [-180, 180
                       -36.7, 90
                       -80, 90
                       -175, 175
@@ -99,38 +99,38 @@ function pos = niryo_one(mov)
         config(i).JointPosition = min( range_rotation(i,2), config(i).JointPosition );
     end
 % 
-%     %% plot figure
-%     
-%     f = figure;
-%     tit1 = "Niryo One positions, after a movement.";
-%     tit2 = "J1 = " + num2str(mov(1)) + " rad;   J2 = " + num2str(mov(2)) + " rad;   J3 = " + num2str(mov(3)) + " rad;   J4 = " + num2str(mov(4)) + " rad;   J5 = " + num2str(mov(5)) + " rad;   J6 = " + num2str(mov(6)) + " rad;";
-%         
-%     suptitle([tit1 tit2])
-%     
-%     hold on
-%     f.Position(3) = 2*f.Position(3);
-%     
-%     subplot(1,2,1);
-%     
-%     robot_relax = show(robot);
-%     robot_relax.Units = "centimeters";
-%     robot_relax.XLimMode = "auto";
-%     robot_relax.YLimMode = "auto";
-%     robot_relax.ZLimMode = "auto";
-%     
-%     title("Relax Position");
-%     
-%     subplot(1,2,2);
-%     
-%     robot_action = show(robot, config);
-%     robot_action.Units = "centimeters";
-%     robot_action.XLimMode = "auto";
-%     robot_action.YLimMode = "auto";
-%     robot_action.ZLimMode = "auto";
-%     
-%     title("Action Position");
-%     
-%     
+    %% plot figure
+    
+    f = figure;
+    tit1 = "Niryo One positions, after a movement.";
+    tit2 = "J1 = " + num2str(mov(1)) + " rad;   J2 = " + num2str(mov(2)) + " rad;   J3 = " + num2str(mov(3)) + " rad;   J4 = " + num2str(mov(4)) + " rad;   J5 = " + num2str(mov(5)) + " rad;   J6 = " + num2str(mov(6)) + " rad;";
+        
+    suptitle([tit1 tit2])
+    
+    hold on
+    f.Position(3) = 2*f.Position(3);
+    
+    subplot(1,2,1);
+    
+    robot_relax = show(robot);
+    robot_relax.Units = "centimeters";
+    robot_relax.XLimMode = "auto";
+    robot_relax.YLimMode = "auto";
+    robot_relax.ZLimMode = "auto";
+    
+    title("Relax Position");
+    
+    subplot(1,2,2);
+    
+    robot_action = show(robot, config);
+    robot_action.Units = "centimeters";
+    robot_action.XLimMode = "auto";
+    robot_action.YLimMode = "auto";
+    robot_action.ZLimMode = "auto";
+    
+    title("Action Position");
+    
+    
     %% final position
 
     pos = getTransform(robot,config,'Wrist'); pos = pos(1:3,4);

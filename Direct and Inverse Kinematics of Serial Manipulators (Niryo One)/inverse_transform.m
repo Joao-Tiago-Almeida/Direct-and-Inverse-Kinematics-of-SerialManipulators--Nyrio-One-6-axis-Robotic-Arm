@@ -27,9 +27,10 @@ function angles = get_planar_geometry(x, y, z)
     l2 = 21;
     l3 = sqrt(3^2 + (4.15+18)^2);
     
-    beta = atan2(z, xy);    % angle between end effort and ground Q1
+    sig = sign(x-0.89188);
+    beta = atan2(z, sig*xy);    % angle between end effort and ground Q1
     
-    phi = acos( (l2^2 + xyz^2 -l3^2 )/(2*l2*xyz) ); % angle between beta and length 1
+    phi = acos( (l2^2 + xyz^2 - l3^2 )/(2*l2*xyz) ); % angle between beta and length 1
     
     % coordinates in 2D
     theta3 = acos( (xy.^2 + z^2 - l2^2 -l3^2)/(2*l2*l3) ) ; theta3 = [-theta3 theta3];   
@@ -60,6 +61,6 @@ function angles = get_planar_geometry(x, y, z)
     % flag if movement is possible, both angles
     joint_flag = (joint2_flag+joint3_flag) == 2;
    
-    angles = [joint2; joint3]*joint_flag'
+    angles = [joint2; joint3]*diag(joint_flag)
 end
 
