@@ -1,4 +1,4 @@
-function angles = inverse_transform(O)
+function joints6dof = inverse_transform(O)
 
     if nargin < 1
         kinematics
@@ -8,13 +8,9 @@ function angles = inverse_transform(O)
     [P0_5, T0_6] = get_joint_position_five(O);
     joint123 = get_planar_geometry(P0_5(1), P0_5(2), P0_5(3)-10.3-8); % TODO tirar as colunas com 5
      
-    T0_3 = compute_T0_3(joint123(:,1)');
-    T3_6 = T0_3\T0_6;
-    joint456 = get_joint456(T3_6);
-    
-    angles = zeros(6, size(joint123,2)*size(joint456,2));   % each column is a different option
-    angles(1:3,:) = repmat(joint123, 1, size(joint456,2));  % combinations of the joints 123
-    angles(4:6,:) = repmat(joint456, 1, size(joint123,2));  % combinations of the joints 456
+    T0_3 = compute_T0_3(joint123);
+    T3_6 = compute_T3_6(T0_3, T0_6);
+    joints6dof = compute_combinations(T3_6, joint123); 
    
 end
 
@@ -48,85 +44,112 @@ end
 %% draw T0_3 matrix
 function T0_3 = compute_T0_3(joint123)
     
-    A1 = joint123(1);   A2 = joint123(2);   A3 = joint123(3);
+    T0_3 = zeros(4,4,size(joint123,2));
     
-    F0_to_F1 = [cos(A1),    -sin(A1),  0,   0;
-                sin(A1),    cos(A1),   0,   0;
-                0,          0,         1,   10.3;
-                0,          0,         0,   1
-               ];
-           
-	F1_to_F2 = [cos(A2),   0,  sin(A2),    0;
-                0,         1,  0,          0;
-                -sin(A2),  0,	cos(A2),    8;
-                0,         0,	0,          1
-               ];
-            
-    F2_to_F3 = [cos(A3),   0   sin(A3),	0;
-                0,         1,  0,          0;
-                -sin(A3),  0,  cos(A3),    21;
-                0,         0,  0,          1
-               ];
-           
-    T0_3 = F0_to_F1 * F1_to_F2 * F2_to_F3;
+    for i = 1:size(T0_3,3)
+        A1 = joint123(1,i);   A2 = joint123(2,i);   A3 = joint123(3,i);
 
+        F0_to_F1 = [cos(A1),    -sin(A1),  0,   0;
+                    sin(A1),    cos(A1),   0,   0;
+                    0,          0,         1,   10.3;
+                    0,          0,         0,   1
+                   ];
+
+        F1_to_F2 = [cos(A2),   0,  sin(A2),    0;
+                    0,         1,  0,          0;
+                    -sin(A2),  0,	cos(A2),    8;
+                    0,         0,	0,          1
+                   ];
+
+        F2_to_F3 = [cos(A3),   0   sin(A3),	0;
+                    0,         1,  0,          0;
+                    -sin(A3),  0,  cos(A3),    21;
+                    0,         0,  0,          1
+                   ];
+
+        T0_3(:,:,i) = F0_to_F1 * F1_to_F2 * F2_to_F3;
+    end
 end
 
-%% compute 3DOF orientation joints
-function angles = get_joint456(T3_6)
-
-    joint5 = acos(T3_6(1,1));   joint5 = [-joint5, joint5];
+%% draw T3_6 matrix
+function T3_6 = compute_T3_6(T0_3, T0_6)
     
-    % in case there is only a rotation in x
-    if T3_6(1,1) == 1
-        ang = atan2(T3_6(3,2),T3_6(2,2));   % Rotx --->>> T3_6(3,2) == cos()  T3_6(2,2) == sin()
-        if abs(ang) > 175*pi/180
-            joint4 = sign*(175*pi/180);
-            joint6 = sign(ang)*(abs(ang) - 175*pi/180);
-            angles = [joint4; 0; joint6]
-            
+    T3_6 = zeros(4,4,size(T0_3,3));
+    
+    for i=1:size(T0_3,3)
+        T3_6(:,:,i) = T0_3(:,:,i)\T0_6;    
+    end
+end
+
+%% compute 6DOF orientation and translation joints
+function joints = compute_combinations(T3_6, joint123)
+    
+    joints = zeros(6,0);    % init declaration
+    
+    for i=1:size(T3_6,3)
+        
+        T = T3_6(:,:,i);
+        joint5 = round(acos(T(1,1)), 4);   joint5 = [-joint5, joint5];
+        
+        % if else - Compute the available positions to joint456
+        % in case there is only a rotation in x
+        if round(T(1,1),4) == 1
+            ang = atan2(T(3,2),T(2,2));   % Rotx --->>> T3_6(3,2) == cos()  T3_6(2,2) == sin()
+            if abs(ang) > 175*pi/180
+                joint4 = sign*(175*pi/180);
+                joint6 = sign(ang)*(abs(ang) - 175*pi/180);
+                joint456 = [joint4; 0; joint6]
+
+            else
+                joint456 = [ang; 0; 0];
+            end
+        
         else
-            angles = [ang; 0; 0];
-        end
-        return
-    else
-    
-        joint4_aux = asin( T3_6(2,1)./sin(joint5) );  joint4_aux = [joint4_aux; sign(joint4_aux)*pi-joint4_aux];
-        joint4_flag = round(T3_6(3,1), 4) == round(-cos(joint4_aux).*sin(joint5), 4);
-        joint4 = sum(joint4_aux.*joint4_flag,1);    % only one option per column
 
-        joint6_aux = asin( T3_6(1,2)./sin(joint5) );  joint6_aux = [joint6_aux; sign(joint6_aux)*pi-joint6_aux];
-        joint6_flag = round(T3_6(1,3), 4) == round(cos(joint6_aux).*sin(joint5), 4);
-        joint6 = sum(joint6_aux.*joint6_flag,1);
+            joint4_aux = asin( T(2,1)./sin(joint5) );  joint4_aux = [joint4_aux; sign(joint4_aux)*pi-joint4_aux];
+            joint4_flag = round(T(3,1), 3) == round(-cos(joint4_aux).*sin(joint5), 3);
+            joint4 = sum(joint4_aux.*joint4_flag,1);    % only one option per column
+
+            joint6_aux = asin( T(1,2)./sin(joint5) );  joint6_aux = [joint6_aux; sign(joint6_aux)*pi-joint6_aux];
+            joint6_flag = round(T(1,3), 3) == round(cos(joint6_aux).*sin(joint5), 3);
+            joint6 = sum(joint6_aux.*joint6_flag,1);
+
+
+            if( sum(sum(joint4_flag)) ~= 2 || sum(sum(joint6_flag)) ~= 2 )
+                disp("O Rosa tinha razão e o Almeida é um burro")
+            end
+
+            % bound between -pi and pi
+            joint4 = round( bound_angle(joint4, -pi, pi), 4);
+            joint5 = round( bound_angle(joint5, -pi, pi), 4);
+            joint6 = round( bound_angle(joint6, -pi, pi), 4);
+
+            % check if it is a possible position
+            f = @(x,m,M) (x>=m) .* (x<=M);
+
+            min4 = round(-175*pi/180, 4);       max4 = round(175*pi/180, 4);
+            min5 = round(-110*pi/180, 4);       max5 = round(100*pi/180, 4);
+            min6 = round(-147.5*pi/180, 4);     max6 = round(147.5*pi/180, 4);
+
+            % individuals angles for each movement
+            joint4_flag = f(joint4, min4, max4);
+            joint5_flag = f(joint5, min5, max5);
+            joint6_flag = f(joint6, min6, max6);
+
+            % flag if movement is possible, both angles
+            joint_flag = (joint4_flag+joint5_flag+joint6_flag) == 3;
+
+            joint456 = [joint4; joint5; joint6];
+            joint456 = joint456(:,joint_flag);
+        end         
+        
+        % compute all 6DOF package
+        angles = zeros(6, size(joint456,2));                    % each column is a different option    
+        angles(1:3,:) = repmat(joint123(:,i), 1, size(joint456,2));  % combinations of the joints 123
+        angles(4:6,:) = joint456 ;  % combinations of the joints 456
+        
+        joints = [joints angles];
     end
-    
-    if( sum(sum(joint4_flag)) ~= 2 || sum(sum(joint6_flag)) ~= 2 )
-        disp("O Rosa tinha razão e o Almeida é um burro")
-    end
-    
-    % bound between -pi and pi
-    joint4 = round( bound_angle(joint4, -pi, pi), 4);
-    joint5 = round( bound_angle(joint5, -pi, pi), 4);
-    joint6 = round( bound_angle(joint6, -pi, pi), 4);
-    
-    % check if it is a possible position
-    f = @(x,m,M) (x>=m) .* (x<=M);
-    
-    min4 = round(-175*pi/180, 4);       max4 = round(175*pi/180, 4);
-    min5 = round(-110*pi/180, 4);       max5 = round(100*pi/180, 4);
-    min6 = round(-147.5*pi/180, 4);     max6 = round(147.5*pi/180, 4);
-    
-    % individuals angles for each movement
-    joint4_flag = f(joint4, min4, max4);
-    joint5_flag = f(joint5, min5, max5);
-    joint6_flag = f(joint6, min6, max6);
-    
-    % flag if movement is possible, both angles
-    joint_flag = (joint4_flag+joint5_flag+joint6_flag) == 3;
-   
-    angles = [joint4; joint5; joint6];
-    angles = angles(:,joint_flag);
- 
 end
 
 %% compute the linear geometry

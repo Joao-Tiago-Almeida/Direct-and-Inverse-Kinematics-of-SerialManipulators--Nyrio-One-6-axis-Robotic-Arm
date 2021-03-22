@@ -103,7 +103,7 @@ function pos = niryo_one(mov, draw)
         config(i).JointPosition = min( range_rotation(i,2), config(i).JointPosition );
     end
     
-    pos = getTransform(robot,config,'Hand'); pos = pos(1:3,4) % compute final postion
+    pos = getTransform(robot,config,'Hand'); pos = pos(1:3,4); % compute final postion
 % 
     %% plot figure
     
