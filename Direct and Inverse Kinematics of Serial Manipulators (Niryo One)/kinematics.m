@@ -1,6 +1,6 @@
 %% direct Kinematics
 % 
-a_dk = [0 pi/10 -pi/10 0 0 0];
+a_dk = [pi/4 pi/10 -pi/10 0 0 0];
 % 
 o_dk = direct_transform(a_dk);
 % 

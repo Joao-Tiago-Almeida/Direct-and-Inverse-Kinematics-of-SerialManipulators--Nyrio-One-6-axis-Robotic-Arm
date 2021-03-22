@@ -10,7 +10,9 @@ function joints6dof = inverse_transform(O)
      
     T0_3 = compute_T0_3(joint123);
     T3_6 = compute_T3_6(T0_3, T0_6);
-    joints6dof = compute_combinations(T3_6, joint123); 
+    joints6dof = compute_combinations(T3_6, joint123);
+    
+    joints6dof = singularities(joints6dof);
    
 end
 
@@ -95,15 +97,29 @@ function joints = compute_combinations(T3_6, joint123)
         % in case there is only a rotation in x
         if round(T(1,1),4) == 1
             ang = atan2(T(3,2),T(2,2));   % Rotx --->>> T3_6(3,2) == cos()  T3_6(2,2) == sin()
+            
+            % force maximum rotation in joint4
             if abs(ang) > 175*pi/180
-                joint4 = sign*(175*pi/180);
+                joint4 = sign(ang)*(175*pi/180);
                 joint6 = sign(ang)*(abs(ang) - 175*pi/180);
-                joint456 = [joint4; 0; joint6]
+                joint456_4 = [joint4; 0; joint6]
 
             else
-                joint456 = [ang; 0; 0];
+                joint456_4 = [ang; 0; 0];
+            end
+            
+            % force maximum rotation in joint6
+            if abs(ang) > 147.5*pi/180
+                joint4 = sign(ang)*(147.5*pi/180);
+                joint6 = sign(ang)*(abs(ang) - 147.5*pi/180);
+                joint456_6 = [joint4; 0; joint6]
+
+            else
+                joint456_6 = [ang; 0; 0];
             end
         
+            joint456 = [joint456_4, joint456_6];
+            
         else
 
             joint4_aux = asin( T(2,1)./sin(joint5) );  joint4_aux = [joint4_aux; sign(joint4_aux)*pi-joint4_aux];
@@ -124,23 +140,23 @@ function joints = compute_combinations(T3_6, joint123)
             joint5 = round( bound_angle(joint5, -pi, pi), 4);
             joint6 = round( bound_angle(joint6, -pi, pi), 4);
 
-            % check if it is a possible position
-            f = @(x,m,M) (x>=m) .* (x<=M);
-
-            min4 = round(-175*pi/180, 4);       max4 = round(175*pi/180, 4);
-            min5 = round(-110*pi/180, 4);       max5 = round(100*pi/180, 4);
-            min6 = round(-147.5*pi/180, 4);     max6 = round(147.5*pi/180, 4);
-
-            % individuals angles for each movement
-            joint4_flag = f(joint4, min4, max4);
-            joint5_flag = f(joint5, min5, max5);
-            joint6_flag = f(joint6, min6, max6);
-
-            % flag if movement is possible, both angles
-            joint_flag = (joint4_flag+joint5_flag+joint6_flag) == 3;
-
-            joint456 = [joint4; joint5; joint6];
-            joint456 = joint456(:,joint_flag);
+%             % check if it is a possible position
+%             f = @(x,m,M) (x>=m) .* (x<=M);
+% 
+%             min4 = round(-175*pi/180, 4);       max4 = round(175*pi/180, 4);
+%             min5 = round(-110*pi/180, 4);       max5 = round(100*pi/180, 4);
+%             min6 = round(-147.5*pi/180, 4);     max6 = round(147.5*pi/180, 4);
+% 
+%             % individuals angles for each movement
+%             joint4_flag = f(joint4, min4, max4);
+%             joint5_flag = f(joint5, min5, max5);
+%             joint6_flag = f(joint6, min6, max6);
+% 
+%             % flag if movement is possible, both angles
+%             joint_flag = (joint4_flag+joint5_flag+joint6_flag) == 3;
+% 
+             joint456 = [joint4; joint5; joint6];
+%             joint456 = joint456(:,joint_flag);
         end         
         
         % compute all 6DOF package
@@ -181,21 +197,49 @@ function angles = get_planar_geometry(x, y, z)
     joint2 = round( bound_angle(joint2, -pi, pi), 4);
     joint3 = round( bound_angle(joint3, -pi, pi), 4);
     
+%     % check if it is a possible position
+%     f = @(x,m,M) (x>=m) .* (x<=M);
+%     
+%     min1 = round(-175*pi/180, 4);   max1 = round(175*pi/180, 4);
+%     min2 = round(-36.7*pi/180, 4);  max2 = round(pi/2, 4);
+%     min3 = round(-80*pi/180, 4);    max3 = round(pi/2, 4);
+%     
+%     % individuals angles for each movement
+%     joint1_flag = f(joint1, min1, max1);
+%     joint2_flag = f(joint2, min2, max2);
+%     joint3_flag = f(joint3, min3, max3);
+%     
+%     % flag if movement is possible, both angles
+%     joint_flag = (joint1_flag+joint2_flag+joint3_flag) == 3;
+%    
+     angles = [joint1; joint2; joint3];
+%     angles = angles(:,joint_flag);
+end
+
+%% singularities
+function joints_real =  singularities(joints_all)
+
     % check if it is a possible position
     f = @(x,m,M) (x>=m) .* (x<=M);
     
-    min1 = round(-175*pi/180, 4);   max1 = round(175*pi/180, 4);
-    min2 = round(-36.7*pi/180, 4);  max2 = round(pi/2, 4);
-    min3 = round(-80*pi/180, 4);    max3 = round(pi/2, 4);
-    
+    min1 = round(-175*pi/180, 4);       max1 = round(175*pi/180, 4);
+    min2 = round(-36.7*pi/180, 4);      max2 = round(pi/2, 4);
+    min3 = round(-80*pi/180, 4);        max3 = round(pi/2, 4);
+    min4 = round(-175*pi/180, 4);       max4 = round(175*pi/180, 4);
+    min5 = round(-110*pi/180, 4);       max5 = round(100*pi/180, 4);
+    min6 = round(-147.5*pi/180, 4);     max6 = round(147.5*pi/180, 4);
+
     % individuals angles for each movement
-    joint1_flag = f(joint1, min1, max1);
-    joint2_flag = f(joint2, min2, max2);
-    joint3_flag = f(joint3, min3, max3);
+    joint1_flag = f(joints_all(1,:), min1, max1);
+    joint2_flag = f(joints_all(2,:), min2, max2);
+    joint3_flag = f(joints_all(3,:), min3, max3);
+    joint4_flag = f(joints_all(4,:), min4, max4);
+    joint5_flag = f(joints_all(5,:), min5, max5);
+    joint6_flag = f(joints_all(6,:), min6, max6);
     
     % flag if movement is possible, both angles
-    joint_flag = (joint1_flag+joint2_flag+joint3_flag) == 3;
+    joint_flag = (joint1_flag+joint2_flag+joint3_flag+joint4_flag+joint5_flag+joint6_flag) == 6;
    
-    angles = [joint1; joint2; joint3];
-    angles = angles(:,joint_flag);
+    joints_real = joints_all(:,joint_flag);
+
 end
