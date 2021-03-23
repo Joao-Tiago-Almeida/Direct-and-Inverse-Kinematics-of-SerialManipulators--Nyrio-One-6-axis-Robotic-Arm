@@ -5,7 +5,7 @@ function output = direct_transform(A)
         return
     end
 
-    %% physical limits
+    % physical limits
     
     range_rotation = [-175, 175
                       -36.7, 90
@@ -14,7 +14,7 @@ function output = direct_transform(A)
                       -110, 100
                       -147.5, 147.5]*pi/180;    
     
-    % bound to max angle rotation
+    %   bound to max angle rotation
         
     A1 = bound_angle(A(1), range_rotation(1,1), range_rotation(1,2));
     A2 = bound_angle(A(2), range_rotation(2,1), range_rotation(2,2));
@@ -23,6 +23,7 @@ function output = direct_transform(A)
     A5 = bound_angle(A(5), range_rotation(5,1), range_rotation(5,2));
     A6 = bound_angle(A(6), range_rotation(6,1), range_rotation(6,2));
     
+%   A1 = A(1);  A2 = A(2);  A3 = A(3);  A4 = A(4);  A5 = A(5);  A6 = A(6);
     %%
 
     F0_to_F1 = [cos(A1),    -sin(A1),  0,   0;
@@ -57,7 +58,7 @@ function output = direct_transform(A)
             
       F5_to_F6 = [1,    0,          0       ,   2.37;
                   0,    cos(A6),    -sin(A6),   0;
-                  0,    sin(A6),    cos(A6),    0; %-0.55
+                  0,    sin(A6),    cos(A6),    -0.55;
                   0,    0,          0,          1      
                 ];
       
@@ -76,13 +77,13 @@ function out = get_orientation(matrix)
     beta = atan2(sqrt(matrix(1,3)^2 + matrix(2, 3)^2), matrix(3,3));    % Y
     gama = 0;                                                           % Z
     
-    if beta == pi/2
+    if round(beta,3) == round(pi/2,3)
         gama = atan2(matrix(2,1), matrix(1,1));
         
-    elseif beta == -pi/2
+    elseif round(beta,3) == round(-pi/2,3)
         gama = -atan2(matrix(2,1), matrix(1,1));
         
-    elseif beta == 0    % perguntar ao stor
+    elseif round(beta,3) == 0
         gama = 0;
         alpha = cos(beta)*atan2(matrix(2,1), matrix(1,1)); % cos(beta) -> ±1
     else

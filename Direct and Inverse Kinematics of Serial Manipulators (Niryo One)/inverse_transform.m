@@ -1,23 +1,48 @@
-function joints6dof = inverse_transform(O)
+function [best_solution_sorted, offset_sorted] = inverse_transform(O)
 
     if nargin < 1
         kinematics
         return
     end
     
-    [P0_5, T0_6] = get_joint_position_five(O);
-    joint123 = get_planar_geometry(P0_5(1), P0_5(2), P0_5(3)-10.3-8); % TODO tirar as colunas com 5
-     
-    T0_3 = compute_T0_3(joint123);
-    T3_6 = compute_T3_6(T0_3, T0_6);
-    joints6dof = compute_combinations(T3_6, joint123);
+    trials = 0:0.1:2*pi;
+    threshold = 0.1; % mm
     
-    joints6dof = singularities(joints6dof);
-   
+    offset = zeros(1,0);
+    best_solution = zeros(6,0);
+    
+    for i = trials
+
+        [P0_5, T0_6] = get_joint_position_five(O, i);   % new guess for joint6 angle
+        
+        joint123 = get_planar_geometry(P0_5(1), P0_5(2), P0_5(3)-10.3-8);
+
+        T0_3 = compute_T0_3(joint123);
+        T3_6 = compute_T3_6(T0_3, T0_6);
+        joints6dof = compute_combinations(T3_6, joint123);
+
+        joints6dof = singularities(joints6dof);
+        
+        for j = 1:size(joints6dof,2)
+            
+            O_trial = direct_transform(joints6dof(:,j));
+            error = vecnorm(O_trial - O');
+            
+            % store the best values
+            if error <= threshold
+                offset = [offset error];
+                best_solution = [best_solution joints6dof(:,j)];
+            end
+            
+        end
+    end
+    [offset_sorted, order] = sort(offset);  % sort by the norm
+    best_solution_sorted = best_solution(:,order);
+    offset_sorted = offset_sorted'; % column vector
 end
 
 %% compute fifth joint position
-function [P0_5, T0_6] = get_joint_position_five(O)
+function [P0_5, T0_6] = get_joint_position_five(O, joint6_init)
     
     x = O(1); y = O(2); z = O(3);
   
@@ -31,9 +56,8 @@ function [P0_5, T0_6] = get_joint_position_five(O)
                 sa*cb*cg+ca*sg,   -sa*cb*sg+ca*cg,    sa*sb
                 -sb*cg,           sg*sb,              cb    ];
     
-    P5_6 = [2.37 0 0]';
-    
-    joint6_init = 0;
+    P5_6 = [2.37 0 -0.55]';
+
     R5_6 = [1,  0,                  0
             0,  cos(joint6_init),   -sin(joint6_init)  
             0,  sin(joint6_init),   cos(joint6_init)];
@@ -130,11 +154,6 @@ function joints = compute_combinations(T3_6, joint123)
             joint6_flag = round(T(1,3), 3) == round(cos(joint6_aux).*sin(joint5), 3);
             joint6 = sum(joint6_aux.*joint6_flag,1);
 
-
-            if( sum(sum(joint4_flag)) ~= 2 || sum(sum(joint6_flag)) ~= 2 )
-                disp("O Rosa tinha razão e o Almeida é um burro")
-            end
-
             % bound between -pi and pi
             joint4 = round( bound_angle(joint4, -pi, pi), 4);
             joint5 = round( bound_angle(joint5, -pi, pi), 4);
@@ -217,7 +236,7 @@ function angles = get_planar_geometry(x, y, z)
 end
 
 %% singularities
-function joints_real =  singularities(joints_all)
+function joints_real = singularities(joints_all)
 
     % check if it is a possible position
     f = @(x,m,M) (x>=m) .* (x<=M);
@@ -230,12 +249,12 @@ function joints_real =  singularities(joints_all)
     min6 = round(-147.5*pi/180, 4);     max6 = round(147.5*pi/180, 4);
 
     % individuals angles for each movement
-    joint1_flag = f(joints_all(1,:), min1, max1);
-    joint2_flag = f(joints_all(2,:), min2, max2);
-    joint3_flag = f(joints_all(3,:), min3, max3);
-    joint4_flag = f(joints_all(4,:), min4, max4);
-    joint5_flag = f(joints_all(5,:), min5, max5);
-    joint6_flag = f(joints_all(6,:), min6, max6);
+    joint1_flag = f(joints_all(1,:), min1, max1) * isreal(joints_all(1,:));
+    joint2_flag = f(joints_all(2,:), min2, max2) * isreal(joints_all(2,:));
+    joint3_flag = f(joints_all(3,:), min3, max3) * isreal(joints_all(3,:));
+    joint4_flag = f(joints_all(4,:), min4, max4) * isreal(joints_all(4,:));
+    joint5_flag = f(joints_all(5,:), min5, max5) * isreal(joints_all(5,:));
+    joint6_flag = f(joints_all(6,:), min6, max6) * isreal(joints_all(6,:));
     
     % flag if movement is possible, both angles
     joint_flag = (joint1_flag+joint2_flag+joint3_flag+joint4_flag+joint5_flag+joint6_flag) == 6;
