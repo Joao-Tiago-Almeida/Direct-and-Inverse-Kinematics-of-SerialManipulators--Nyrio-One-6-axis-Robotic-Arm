@@ -6,7 +6,7 @@ function [best_solution_sorted, offset_sorted] = inverse_transform(O)
     end
     
     trials = 0:0.1:2*pi;
-    threshold = 0.1; % mm
+    threshold = 0.1*pi/180; % rad
     
     offset = zeros(1,0);
     best_solution = zeros(6,0);
@@ -21,12 +21,12 @@ function [best_solution_sorted, offset_sorted] = inverse_transform(O)
         T3_6 = compute_T3_6(T0_3, T0_6);
         joints6dof = compute_combinations(T3_6, joint123);
 
-        joints6dof = singularities(joints6dof);
+        joints6dof = get_real_movements(joints6dof);
         
         for j = 1:size(joints6dof,2)
             
             O_trial = direct_transform(joints6dof(:,j));
-            error = vecnorm(O_trial - O');
+            error = vecnorm(O_trial(6) - O(6));
             
             % store the best values
             if error <= threshold
@@ -120,7 +120,7 @@ function joints = compute_combinations(T3_6, joint123)
         % if else - Compute the available positions to joint456
         % in case there is only a rotation in x
         if round(T(1,1),4) == 1
-            ang = atan2(T(3,2),T(2,2));   % Rotx --->>> T3_6(3,2) == cos()  T3_6(2,2) == sin()
+            ang = atan2(T(3,2),T(2,2));   % Rotx --->>> T3_6(3,2) == sin()  T3_6(2,2) == cos()
             
             % force maximum rotation in joint4
             if abs(ang) > 175*pi/180
@@ -236,7 +236,7 @@ function angles = get_planar_geometry(x, y, z)
 end
 
 %% singularities
-function joints_real = singularities(joints_all)
+function joints_real = get_real_movements(joints_all)
 
     % check if it is a possible position
     f = @(x,m,M) (x>=m) .* (x<=M);

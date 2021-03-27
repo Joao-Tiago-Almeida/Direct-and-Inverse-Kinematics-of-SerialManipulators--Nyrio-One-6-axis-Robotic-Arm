@@ -10,7 +10,7 @@ pos = niryo_one(a_dk, false)
 
 %o_ik = [o_dk(1:3)' 0 0 0];
 
-[a_ik, offset_mm] = inverse_transform(o_dk');
+[a_ik, offset] = inverse_transform(o_dk');
 disp("Found at least " + num2str(size(a_ik,2)) + " option.");
 disp("Best solution with " + num2str(offset(1)) + " norm error.");
 
