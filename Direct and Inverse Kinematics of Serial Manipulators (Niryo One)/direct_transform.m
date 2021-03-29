@@ -68,7 +68,7 @@ function output = direct_transform(A)
       
       orientation = get_orientation(Total_T_matrix);
       
-      output = [coords(1:3);orientation'];
+      output = [coords(1:3)*10;orientation'];   % to mm
 end
 
 function out = get_orientation(matrix)
@@ -90,6 +90,9 @@ function out = get_orientation(matrix)
         alpha = atan2(matrix(2,3)/sin(beta), matrix(1,3)/sin(beta));
         gama = atan2(matrix(3,2)/sin(beta), -matrix(3,1)/sin(beta));
     end
+    
+    % make pi and -pi to 0
+    f = @(x) x*(round(cos(x),3) ~= -1)
         
-    out = [alpha beta gama];
+    out = [f(alpha) f(beta) f(gama)];
 end

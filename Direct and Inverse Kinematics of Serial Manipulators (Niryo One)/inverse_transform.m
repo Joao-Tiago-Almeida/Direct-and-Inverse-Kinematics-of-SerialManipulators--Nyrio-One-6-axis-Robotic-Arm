@@ -1,16 +1,16 @@
-function [best_solution_sorted, offset_sorted] = inverse_transform(O)
+function [best_solution_sorted, error_vec_sorted, has_solutions] = inverse_transform(O)
 
     if nargin < 1
         kinematics
         return
     end
     
-    trials = 0:0.1:2*pi;
+    trials = 0:0.1:2*pi;    % range angles
     threshold = 0.1*pi/180; % rad
     
-    offset = zeros(1,0);
+    error_vec = zeros(1,0);
     best_solution = zeros(6,0);
-    
+
     for i = trials
 
         [P0_5, T0_6] = get_joint_position_five(O, i);   % new guess for joint6 angle
@@ -19,9 +19,9 @@ function [best_solution_sorted, offset_sorted] = inverse_transform(O)
 
         T0_3 = compute_T0_3(joint123);
         T3_6 = compute_T3_6(T0_3, T0_6);
-        joints6dof = compute_combinations(T3_6, joint123);
-
-        joints6dof = get_real_movements(joints6dof);
+        joints6dof = compute_combinations(T3_6, joint123);  % get available solutions ( 8 preferable )
+        
+        joints6dof = get_real_movements(joints6dof, false);
         
         for j = 1:size(joints6dof,2)
             
@@ -30,15 +30,16 @@ function [best_solution_sorted, offset_sorted] = inverse_transform(O)
             
             % store the best values
             if error <= threshold
-                offset = [offset error];
+                error_vec = [error_vec error];
                 best_solution = [best_solution joints6dof(:,j)];
             end
             
         end
     end
-    [offset_sorted, order] = sort(offset);  % sort by the norm
+    [error_vec_sorted, order] = sort(error_vec);  % sort by the norm
     best_solution_sorted = best_solution(:,order);
-    offset_sorted = offset_sorted'; % column vector
+    error_vec_sorted = error_vec_sorted'; % column vector
+    has_solutions = logical(size(best_solution_sorted,2));
 end
 
 %% compute fifth joint position
@@ -46,7 +47,7 @@ function [P0_5, T0_6] = get_joint_position_five(O, joint6_init)
     
     x = O(1); y = O(2); z = O(3);
   
-    P0_6 = [ x y z ]';
+    P0_6 = 0.1*[ x y z ]';  % to cm
     
     ca = cos(O(4)); sa = sin(O(4));
     cb = cos(O(5)); sb = sin(O(5));
@@ -157,25 +158,9 @@ function joints = compute_combinations(T3_6, joint123)
             % bound between -pi and pi
             joint4 = round( bound_angle(joint4, -pi, pi), 4);
             joint5 = round( bound_angle(joint5, -pi, pi), 4);
-            joint6 = round( bound_angle(joint6, -pi, pi), 4);
-
-%             % check if it is a possible position
-%             f = @(x,m,M) (x>=m) .* (x<=M);
-% 
-%             min4 = round(-175*pi/180, 4);       max4 = round(175*pi/180, 4);
-%             min5 = round(-110*pi/180, 4);       max5 = round(100*pi/180, 4);
-%             min6 = round(-147.5*pi/180, 4);     max6 = round(147.5*pi/180, 4);
-% 
-%             % individuals angles for each movement
-%             joint4_flag = f(joint4, min4, max4);
-%             joint5_flag = f(joint5, min5, max5);
-%             joint6_flag = f(joint6, min6, max6);
-% 
-%             % flag if movement is possible, both angles
-%             joint_flag = (joint4_flag+joint5_flag+joint6_flag) == 3;
-% 
-             joint456 = [joint4; joint5; joint6];
-%             joint456 = joint456(:,joint_flag);
+            joint6 = round( bound_angle(joint6, -pi, pi), 4); 
+            
+            joint456 = [joint4; joint5; joint6];
         end         
         
         % compute all 6DOF package
@@ -216,27 +201,27 @@ function angles = get_planar_geometry(x, y, z)
     joint2 = round( bound_angle(joint2, -pi, pi), 4);
     joint3 = round( bound_angle(joint3, -pi, pi), 4);
     
-%     % check if it is a possible position
-%     f = @(x,m,M) (x>=m) .* (x<=M);
-%     
-%     min1 = round(-175*pi/180, 4);   max1 = round(175*pi/180, 4);
-%     min2 = round(-36.7*pi/180, 4);  max2 = round(pi/2, 4);
-%     min3 = round(-80*pi/180, 4);    max3 = round(pi/2, 4);
-%     
-%     % individuals angles for each movement
-%     joint1_flag = f(joint1, min1, max1);
-%     joint2_flag = f(joint2, min2, max2);
-%     joint3_flag = f(joint3, min3, max3);
-%     
-%     % flag if movement is possible, both angles
-%     joint_flag = (joint1_flag+joint2_flag+joint3_flag) == 3;
-%    
-     angles = [joint1; joint2; joint3];
-%     angles = angles(:,joint_flag);
+    angles = [joint1; joint2; joint3];
 end
 
 %% singularities
-function joints_real = get_real_movements(joints_all)
+function joints_real = get_real_movements(joints_all, constrains)
+    
+    if nargin < 2
+        constrains = true;
+    end
+    
+    real_solutions = zeros(size(joints_all,1), 1);  % has to be 8x1!
+    
+    for i =1:size(real_solutions,1)
+        real_solutoins(i) = isreal(joints_all(:,i));
+    end
+    
+    joints_real = joints_all(:,real_solutoins);
+    
+    if ~constrains
+        return
+    end
 
     % check if it is a possible position
     f = @(x,m,M) (x>=m) .* (x<=M);
@@ -249,16 +234,16 @@ function joints_real = get_real_movements(joints_all)
     min6 = round(-147.5*pi/180, 4);     max6 = round(147.5*pi/180, 4);
 
     % individuals angles for each movement
-    joint1_flag = f(joints_all(1,:), min1, max1) * isreal(joints_all(1,:));
-    joint2_flag = f(joints_all(2,:), min2, max2) * isreal(joints_all(2,:));
-    joint3_flag = f(joints_all(3,:), min3, max3) * isreal(joints_all(3,:));
-    joint4_flag = f(joints_all(4,:), min4, max4) * isreal(joints_all(4,:));
-    joint5_flag = f(joints_all(5,:), min5, max5) * isreal(joints_all(5,:));
-    joint6_flag = f(joints_all(6,:), min6, max6) * isreal(joints_all(6,:));
+    joint1_flag = f(joints_real(1,:), min1, max1);
+    joint2_flag = f(joints_real(2,:), min2, max2);
+    joint3_flag = f(joints_real(3,:), min3, max3);
+    joint4_flag = f(joints_real(4,:), min4, max4);
+    joint5_flag = f(joints_real(5,:), min5, max5);
+    joint6_flag = f(joints_real(6,:), min6, max6);
     
     % flag if movement is possible, both angles
     joint_flag = (joint1_flag+joint2_flag+joint3_flag+joint4_flag+joint5_flag+joint6_flag) == 6;
    
-    joints_real = joints_all(:,joint_flag);
+    joints_real = joints_real(:,joint_flag);
 
 end

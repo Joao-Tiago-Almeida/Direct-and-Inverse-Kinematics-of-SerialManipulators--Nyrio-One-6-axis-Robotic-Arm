@@ -1,21 +1,28 @@
 %% direct Kinematics
 % 
-a_dk = [-10 33 -21 80 45 -38]*pi/180;
+a_dk = [0 pi/10 -pi/9 0 0 0];
 % 
-o_dk = direct_transform(a_dk);
+o_dk = direct_transform(a_dk)
 % 
-pos = niryo_one(a_dk, false)
+pos = niryo_one(a_dk, false, true);
 
 %% inverse Kinematics
 
-%o_ik = [o_dk(1:3)' 0 0 0];
+o_ik = [400 0 150 0 0 0];
 
-[a_ik, offset] = inverse_transform(o_dk');
+[a_ik, offset, has_solutions] = inverse_transform(o_ik');
+
+%%
+if ~has_solutions
+    disp("There are no available solutions!");
+    return
+end
+
 disp("Found at least " + num2str(size(a_ik,2)) + " option.");
-disp("Best solution with " + num2str(offset(1)) + " norm error.");
+disp("Best solution with " + num2str(error(1)) + " norm error.");
 
 %%
 for i=1:size(a_ik,2)
-    niryo_one(a_ik(:,i), false);
+    niryo_one(a_ik(:,i), false, false);
 end
 

@@ -1,12 +1,11 @@
-function pos = niryo_one(mov, draw)
+function pos = niryo_one(mov, constrains, draw)
 
-    if nargin < 2
+    if nargin < 3
         draw = true;
     end
 
     robot = rigidBodyTree; % rigid body tree
-
-
+ 
     %% Robot construction
 
     body0 = rigidBody('Support');
@@ -87,13 +86,17 @@ function pos = niryo_one(mov, draw)
     %showdetails(robot);
 
     %% Movement
-    
-    range_rotation = [-175, 175
-                      -36.7, 90
-                      -80, 90
-                      -175, 175
-                      -110, 100
-                      -147.5, 147.5]*pi/180;
+              
+    if constrains
+        range_rotation = [-175, 175
+                          -36.7, 90
+                          -80, 90
+                          -175, 175
+                          -110, 100
+                          -147.5, 147.5]*pi/180;
+    else
+        range_rotation = repmat([-pi, pi], 6, 1);
+    end
                     
     config = homeConfiguration(robot);
     
@@ -103,7 +106,7 @@ function pos = niryo_one(mov, draw)
         config(i).JointPosition = min( range_rotation(i,2), config(i).JointPosition );
     end
     
-    pos = getTransform(robot,config,'Hand'); pos = pos(1:3,4); % compute final postion
+    pos = getTransform(robot,config,'Hand'); pos = 10*pos(1:3,4); % compute final postion in mm
 % 
     %% plot figure
     
