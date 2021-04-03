@@ -7,23 +7,23 @@ function output = direct_transform(A)
 
     % physical limits
     
-    range_rotation = [-175, 175
-                      -36.7, 90
-                      -80, 90
-                      -175, 175
-                      -110, 100
-                      -147.5, 147.5]*pi/180;    
+%     range_rotation = [-175, 175
+%                       -36.7, 90
+%                       -80, 90
+%                       -175, 175
+%                       -110, 100
+%                       -147.5, 147.5]*pi/180;    
+%     
+%     %   bound to max angle rotation
+%         
+%     A1 = bound_angle(A(1), range_rotation(1,1), range_rotation(1,2));
+%     A2 = bound_angle(A(2), range_rotation(2,1), range_rotation(2,2));
+%     A3 = bound_angle(A(3), range_rotation(3,1), range_rotation(3,2));
+%     A4 = bound_angle(A(4), range_rotation(4,1), range_rotation(4,2));
+%     A5 = bound_angle(A(5), range_rotation(5,1), range_rotation(5,2));
+%     A6 = bound_angle(A(6), range_rotation(6,1), range_rotation(6,2));
     
-    %   bound to max angle rotation
-        
-    A1 = bound_angle(A(1), range_rotation(1,1), range_rotation(1,2));
-    A2 = bound_angle(A(2), range_rotation(2,1), range_rotation(2,2));
-    A3 = bound_angle(A(3), range_rotation(3,1), range_rotation(3,2));
-    A4 = bound_angle(A(4), range_rotation(4,1), range_rotation(4,2));
-    A5 = bound_angle(A(5), range_rotation(5,1), range_rotation(5,2));
-    A6 = bound_angle(A(6), range_rotation(6,1), range_rotation(6,2));
-    
-%   A1 = A(1);  A2 = A(2);  A3 = A(3);  A4 = A(4);  A5 = A(5);  A6 = A(6);
+   A1 = A(1);  A2 = A(2);  A3 = A(3);  A4 = A(4);  A5 = A(5);  A6 = A(6);
     %%
 
     F0_to_F1 = [cos(A1),    -sin(A1),  0,   0;
@@ -92,7 +92,18 @@ function out = get_orientation(matrix)
     end
     
     % make pi and -pi to 0
-    f = @(x) x*(round(cos(x),3) ~= -1)
+    f = @(x) x*(round(cos(x),3) ~= -1);
         
     out = [f(alpha) f(beta) f(gama)];
+end
+
+function value = bound_angle(x, m, M)
+
+    x = round(x,4);
+    m = round(m,4);
+    M = round(M,4);
+
+    value = x .* (x>=m) + m .* (x<m);
+    value = value .* (value<=M) + M .* (value>M);
+    
 end

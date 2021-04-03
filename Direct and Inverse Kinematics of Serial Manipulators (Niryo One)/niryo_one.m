@@ -55,7 +55,7 @@ function pos = niryo_one(mov, constrains, draw)
                 0       0   	21      0;
                 4.15    0   	3       0;
                 18      0   	0       0;
-                2.37    0   	0       -0.55];
+                2.37    0   	-0.55   0];
     
     % place spatial the joints
     setFixedTransform(jnt1,dhparams(1,:),'mdh');
@@ -82,6 +82,7 @@ function pos = niryo_one(mov, constrains, draw)
     addBody(robot,body4,'Elbow')
     addBody(robot,body5,'Forearm')
     addBody(robot,body6,'Wrist')
+   
 
     %showdetails(robot);
 
@@ -106,46 +107,44 @@ function pos = niryo_one(mov, constrains, draw)
         config(i).JointPosition = min( range_rotation(i,2), config(i).JointPosition );
     end
     
-    pos = getTransform(robot,config,'Hand'); pos = 10*pos(1:3,4); % compute final postion in mm
+    pos = getTransform(robot,config,'Hand'); pos = pos(1:3,4);
 % 
     %% plot figure
     
     if(draw)
         f = figure;
         tit1 = "Niryo One positions, after a movement.";
-        tit2 = "J1 = " + num2str(mov(1)) + " rad;   J2 = " + num2str(mov(2)) + " rad;   J3 = " + num2str(mov(3)) + " rad;   J4 = " + num2str(mov(4)) + " rad;   J5 = " + num2str(mov(5)) + " rad;   J6 = " + num2str(mov(6)) + " rad;";
+        tit2 = "$\theta_1$ = " + num2str(mov(1)) + " rad;   $\theta_2$ = " + num2str(mov(2)) + " rad;   $\theta_3$ = " + num2str(mov(3)) + " rad;   $\theta_4$ = " + num2str(mov(4)) + " rad;   $\theta_5$ = " + num2str(mov(5)) + " rad;   $\theta_6$ = " + num2str(mov(6)) + " rad;";
 
-        suptitle([tit1 tit2])
-
-        hold on
         f.Position(3) = 2*f.Position(3);
-
-        subplot(1,2,1);
-
-        robot_relax = show(robot);
-        robot_relax.Units = "centimeters";
-        robot_relax.XLimMode = "auto";
-        robot_relax.YLimMode = "auto";
-        robot_relax.ZLimMode = "auto";
-
-        title("Relax Position");
-
-        subplot(1,2,2);
+        f.Position(4) = 2*f.Position(4);
 
         robot_action = show(robot, config);
         robot_action.Units = "centimeters";
         robot_action.XLimMode = "auto";
         robot_action.YLimMode = "auto";
         robot_action.ZLimMode = "auto";
-
-        title("Action Position");
-    
+        
+        hold on;
+        title([tit1 tit2], "FontSize", 20, 'FontName', 'Arial', 'interpreter','latex')
+        
+        % colors
+        f.CurrentAxes.Children(1).FaceColor = [1.00 0.00 0.00]; % Hand
+        f.CurrentAxes.Children(2).FaceColor = [1.00 0.07 0.65]; % Wrist
+        f.CurrentAxes.Children(3).FaceColor = [0.00 0.00 1.00]; % Forearm
+        f.CurrentAxes.Children(4).FaceColor = [0.00 1.00 1.00]; % Elbow
+        f.CurrentAxes.Children(5).FaceColor = [0.42 1.00 0.00]; % Arm
+        f.CurrentAxes.Children(6).FaceColor = [0.81 0.81 0.05]; % Shoulder
+        f.CurrentAxes.Children(7).FaceColor = [0.94 0.69 0.09]; % Support
+        
+        % camera position
+        f.CurrentAxes.CameraPosition = f.CurrentAxes.CameraPosition/3;
     
     %% draw final position
     
          hold on
-         plot3(pos(1), pos(2), pos(3), 'o','Color','b','MarkerSize',10,'MarkerFaceColor','#D9FFFF');
+         %plot3(pos(1), pos(2), pos(3), 'o','Color','w','MarkerSize',30,'MarkerFaceColor','#000000');
     
     end
-
+    pos = 10*pos; % change to mm
 end

@@ -5,11 +5,15 @@ function [best_solution_sorted, error_vec_sorted, has_solutions] = inverse_trans
         return
     end
     
-    trials = 0:0.1:2*pi;    % range angles
-    threshold = 0.1*pi/180; % rad
-    
+    threshold = 0.1; % rad  
+    trials = -pi:threshold:pi;    % range angles
+
+
     error_vec = zeros(1,0);
     best_solution = zeros(6,0);
+
+    count = 0;
+    figure;hold on
 
     for i = trials
 
@@ -23,10 +27,10 @@ function [best_solution_sorted, error_vec_sorted, has_solutions] = inverse_trans
         
         joints6dof = get_real_movements(joints6dof, false);
         
+        plot([count count], [0 pi], 'r');
         for j = 1:size(joints6dof,2)
             
-            O_trial = direct_transform(joints6dof(:,j));
-            error = vecnorm(O_trial(6) - O(6));
+            error = abs(angdiff(i,joints6dof(6,j)));
             
             % store the best values
             if error <= threshold
@@ -34,9 +38,18 @@ function [best_solution_sorted, error_vec_sorted, has_solutions] = inverse_trans
                 best_solution = [best_solution joints6dof(:,j)];
             end
             
+            plot(count, error, '*b');
+            count = count+1;
         end
     end
-    [error_vec_sorted, order] = sort(error_vec);  % sort by the norm
+    
+    xlim([0 count-1]);
+    ylim([0 pi]);
+    yticks([0 pi]);
+    xlabel("iteration")
+    ylabel("error [rad]")
+    
+    [error_vec_sorted, order] = sort(best_solution(6,:));  % sort by the theta 6
     best_solution_sorted = best_solution(:,order);
     error_vec_sorted = error_vec_sorted'; % column vector
     has_solutions = logical(size(best_solution_sorted,2));
@@ -115,6 +128,7 @@ function joints = compute_combinations(T3_6, joint123)
     
     for i=1:size(T3_6,3)
         
+        
         T = T3_6(:,:,i);
         joint5 = round(acos(T(1,1)), 4);   joint5 = [-joint5, joint5];
         
@@ -147,18 +161,26 @@ function joints = compute_combinations(T3_6, joint123)
             
         else
 
-            joint4_aux = asin( T(2,1)./sin(joint5) );  joint4_aux = [joint4_aux; sign(joint4_aux)*pi-joint4_aux];
-            joint4_flag = round(T(3,1), 3) == round(-cos(joint4_aux).*sin(joint5), 3);
+            joint4_aux = asin( round(T(2,1)./sin(joint5),4) );  joint4_aux = [joint4_aux; sign(joint4_aux)*pi-joint4_aux];
+            % when joint4 is ±pi/2, there are repeatable solutions
+            if(round(cos(joint4_aux(1,1)), 2)==0)
+                joint4_aux = joint4_aux.*eye(2);
+            end
+            joint4_flag = round(T(3,1), 2) == round(-cos(joint4_aux).*sin(joint5), 2);
             joint4 = sum(joint4_aux.*joint4_flag,1);    % only one option per column
 
-            joint6_aux = asin( T(1,2)./sin(joint5) );  joint6_aux = [joint6_aux; sign(joint6_aux)*pi-joint6_aux];
-            joint6_flag = round(T(1,3), 3) == round(cos(joint6_aux).*sin(joint5), 3);
+            joint6_aux = asin( round(T(1,2)./sin(joint5),4) );  joint6_aux = [joint6_aux; sign(joint6_aux)*pi-joint6_aux];
+            % when joint6 is ±pi/2, there are repeatable solutions
+            if(round(cos(joint6_aux(1,1)), 2)==0)
+                joint6_aux = joint6_aux.*eye(2);
+            end
+            joint6_flag = round(T(1,3), 2) == round(cos(joint6_aux).*sin(joint5), 2);
             joint6 = sum(joint6_aux.*joint6_flag,1);
 
             % bound between -pi and pi
-            joint4 = round( bound_angle(joint4, -pi, pi), 4);
-            joint5 = round( bound_angle(joint5, -pi, pi), 4);
-            joint6 = round( bound_angle(joint6, -pi, pi), 4); 
+            joint4 = round( wrapToPi(joint4), 4);
+            joint5 = round( wrapToPi(joint5), 4);
+            joint6 = round( wrapToPi(joint6), 4); 
             
             joint456 = [joint4; joint5; joint6];
         end         
@@ -198,10 +220,10 @@ function angles = get_planar_geometry(x, y, z)
     
     % bound between -pi and pi
     joint1 = [ atan2(-y,-x) atan2(-y,-x) atan2(y,x) atan2(y,x) ]; 
-    joint2 = round( bound_angle(joint2, -pi, pi), 4);
-    joint3 = round( bound_angle(joint3, -pi, pi), 4);
+    joint2 = round( wrapToPi(joint2), 4);
+    joint3 = round( wrapToPi(joint3), 4);
     
-    angles = [joint1; joint2; joint3];
+    angles = [joint1; joint2; joint3];  % each solution per column
 end
 
 %% singularities
@@ -211,12 +233,17 @@ function joints_real = get_real_movements(joints_all, constrains)
         constrains = true;
     end
     
-    real_solutions = zeros(size(joints_all,1), 1);  % has to be 8x1!
     
+    real_solutions = zeros(size(joints_all,2), 1);  % has to be 8x1!
+
     for i =1:size(real_solutions,1)
         real_solutoins(i) = isreal(joints_all(:,i));
     end
     
+    if(imag(joints_all) | sum(real_solutoins)~=8)
+        disp("Line 216! By the order of fucking Peaky Blinders!! Tommy says: " + sum(real_solutoins));
+    end
+
     joints_real = joints_all(:,real_solutoins);
     
     if ~constrains
