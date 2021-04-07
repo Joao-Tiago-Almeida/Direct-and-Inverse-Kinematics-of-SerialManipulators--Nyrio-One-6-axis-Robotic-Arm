@@ -147,7 +147,7 @@ function joints = compute_combinations(T3_6, joint123)
             if(round(cos(joint4_aux(1,1)), 2)==0)
                 joint4_aux = joint4_aux.*eye(2);
             end
-            joint4_flag = round(T(3,1) - (-cos(joint4_aux).*sin(joint5)), 2) == 0;
+            joint4_flag = round(T(3,1), - round(-cos(joint4_aux).*sin(joint5), 2);
             joint4 = sum(joint4_aux.*joint4_flag,1);    % only one option per column
 
             joint6_aux = asin( round(T(1,2)./sin(joint5),4) );  joint6_aux = [joint6_aux; sign(joint6_aux)*pi-joint6_aux];
