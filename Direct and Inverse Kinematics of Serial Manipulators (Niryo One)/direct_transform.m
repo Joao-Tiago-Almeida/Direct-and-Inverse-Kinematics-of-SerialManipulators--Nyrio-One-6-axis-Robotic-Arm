@@ -99,6 +99,7 @@ function out = get_orientation(matrix)
     out = [f(alpha) f(beta) f(gama)];
 end
 
+%limit the joint angles to the constraints
 function value = bound_angle(x, m, M)
 
     x = round(x,4);

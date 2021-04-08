@@ -14,21 +14,32 @@ function [best_solution_sorted, error_vec_sorted, has_solutions] = inverse_trans
 
     count = 0;
     figure;hold on
-
+    
+    %The beginning of the brute force method, each iteration is for a
+    %different value of theta6
     for i = trials
 
         [P0_5, T0_6] = get_joint_position_five(O, i);   % new guess for joint6 angle
         
+        %compute the first 3 joints angles(each column is a solution with
+        %the 1st line for theta1, 2nd for theta 2 and the 3rd for theta3 )
+        %[3x4] matrix
         joint123 = get_planar_geometry(P0_5(1), P0_5(2), P0_5(3)-103-80);
-
+        
+        %compute T3_6 matrix
         T0_3 = compute_T0_3(joint123);
         T3_6 = compute_T3_6(T0_3, T0_6);
+        
+        %get all the possible combinations of angles(8 solutions) [6x8]
+        %matrix
         joints6dof = compute_combinations(T3_6, joint123);  % get available solutions ( 8 preferable )
         
+        %discard the imaginary solutions
         joints6dof = get_real_movements(joints6dof, false);
         
         
         plot([count count], [0 pi], 'r');
+        %calculate the error of the computed solutions
         for j = 1:size(joints6dof,2)
             
             error = abs(angdiff(i,joints6dof(6,j)));
@@ -61,7 +72,7 @@ function [P0_5, T0_6] = get_joint_position_five(O, joint6_init)
     
     x = O(1); y = O(2); z = O(3);
   
-    P0_6 = [ x y z ]';  % to cm
+    P0_6 = [ x y z ]'; 
     
     ca = cos(O(4)); sa = sin(O(4));
     cb = cos(O(5)); sb = sin(O(5));
@@ -128,8 +139,6 @@ function joints = compute_combinations(T3_6, joint123)
     joints = zeros(6,0);    % init declaration
     
     for i=1:size(T3_6,3)
-        
-        
         T = T3_6(:,:,i);
         joint5 = round(acos(T(1,1)), 4);   joint5 = [-joint5, joint5];
         
