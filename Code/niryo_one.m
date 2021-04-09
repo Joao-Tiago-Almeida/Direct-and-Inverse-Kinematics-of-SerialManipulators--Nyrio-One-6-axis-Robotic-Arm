@@ -1,3 +1,4 @@
+%   This file displays the bionic arm in centimeters
 function pos = niryo_one(mov, constrains, draw)
 
     if nargin < 3
@@ -41,13 +42,13 @@ function pos = niryo_one(mov, constrains, draw)
     body6 = rigidBody('Hand');
     
     % visual effects
-    addVisual(body0,"Mesh","STL/Base.stl")
-    addVisual(body1,"Mesh","STL/Shoulder.stl");
-    addVisual(body2,"Mesh","STL/ARM.stl");
-    addVisual(body3,"Mesh","STL/Elbow.stl") ;
-    addVisual(body4,"Mesh","STL/Forearm.stl");
-    addVisual(body5,"Mesh","STL/Wrist.stl");
-    addVisual(body6,"Mesh","STL/Hand.stl");
+    addVisual(body0,"Mesh","../STL/Base.stl")
+    addVisual(body1,"Mesh","../STL/Shoulder.stl");
+    addVisual(body2,"Mesh","../STL/ARM.stl");
+    addVisual(body3,"Mesh","../STL/Elbow.stl") ;
+    addVisual(body4,"Mesh","../STL/Forearm.stl");
+    addVisual(body5,"Mesh","../STL/Wrist.stl");
+    addVisual(body6,"Mesh","../STL/Hand.stl");
     
     % robot architecture
     dhparams = [0       0   	10.3    0;
@@ -112,7 +113,7 @@ function pos = niryo_one(mov, constrains, draw)
     %% plot figure
     
     if(draw)
-        f = figure;
+        f = figure();
         tit1 = "Niryo One positions, after a movement.";
         tit2 = "$\theta_1$ = " + num2str(mov(1)) + " rad;   $\theta_2$ = " + num2str(mov(2)) + " rad;   $\theta_3$ = " + num2str(mov(3)) + " rad;   $\theta_4$ = " + num2str(mov(4)) + " rad;   $\theta_5$ = " + num2str(mov(5)) + " rad;   $\theta_6$ = " + num2str(mov(6)) + " rad;";
 

@@ -8,16 +8,15 @@ function best_solution_sorted = inverse_kinematics(O)
     % reshape to column vector
     O = reshape(O, 6, 1);
     
-    threshold = 0.1; % rad  
+    threshold = pi/36; % rad  
     trials = -pi:threshold:pi-threshold;    % range angles
-
 
     error_vec = zeros(1,0);
     best_solution = zeros(6,0);
     weight_solution = zeros(1,0);
 
     count = 0;
-    figure;hold on
+    f = figure;hold on
     
     % The beginning of the brute force method, each iteration is for a
     % different value of theta6
@@ -59,7 +58,9 @@ function best_solution_sorted = inverse_kinematics(O)
             
             % store the best values, error in theta6 under threshold,
             % position error under 2mm
-            if error <= threshold && dir_kin_diff < 1
+            % the round function is needed since 'pi' is not finite and may
+            % presents flutuation errors
+            if round(error-threshold, 3) <= 0 && dir_kin_diff < 1
                 error_vec = [error_vec error];
                 best_solution = [best_solution joints6dof(:,j)];
                 
@@ -74,31 +75,38 @@ function best_solution_sorted = inverse_kinematics(O)
         end
     end
     
-    plot([0 count-1], [threshold threshold], 'k');
+    plot([0 count-1], [threshold threshold], 'k', "LineWidth", 2);
     xlim([0 count-1]);
     ylim([0 pi]);
-    yticks([0 pi]);
-    xlabel("iteration")
-    ylabel("error [rad]")
+    xticks([0 count/4 count/2 3*count/4 count-1]);
+    xticklabels({'-\pi','-\pi/2', '0','\pi/2','\pi'})
+    yticks([0 threshold pi]);
+    yticklabels({'-\pi','\pi/18','\pi'})
+    xlabel("\Theta_6 ", "FontSize", 20)
+    ylabel("error [rad]", "FontSize", 20)
+    legend(["\Theta_6", "angdiff(\Theta_6, \theta_6)"], "FontSize", 16, "Location", "Best")
+    f.CurrentAxes.FontSize = 16;
+    t = title("Diference between computed \theta_6 and tested value (\Theta_6)", "FontSize", 16);
     
     [error_vec_sorted, order] = sort(weight_solution);  % sort by closest xyz
-    best_solution_sorted = best_solution(:,order);
+    best_solution_sorted = best_solution(:,order)';
     error_vec_sorted = error_vec_sorted'; % column vector
-    has_solutions = logical(size(best_solution_sorted,2));
+    has_solutions = logical(size(best_solution_sorted,1));
     
     if ~has_solutions
     disp("There are no available solutions!");
+    best_solution_sorted = zeros(0,6);
     return
     end
 
-    disp("Found at least " + num2str(size(best_solution_sorted,2)) + " option.");
+    disp("Found at least " + num2str(size(best_solution_sorted,1)) + " solutions.");
     disp("Best inverse kinematic solution with " + num2str(error_vec_sorted(1)) + " norm error.");
 
     disp("Best solution :");
-    disp(best_solution_sorted(:,1));
+    disp(best_solution_sorted(1,:));
     
     % bonus point
-    n = my_Kmeans(best_solution);
+    n = my_Kmeans(best_solution_sorted);
     end
 
 %% computes fifth joint position matrix and the end-effector coordinates in the reference 
@@ -185,7 +193,7 @@ function joints = compute_joints456(T3_6, joint123)
             joint456_6 = [0; 0; ang];
             joint456 = [joint456_4, joint456_6];
        else
-            joint4_aux = asin( round(T(2,1)./sin(joint5),4) );  joint4_aux = [joint4_aux; sign(joint4_aux)*pi-joint4_aux];
+            joint4_aux = asin( round(T(2,1)./sin(joint5),4) );  joint4_aux = [joint4_aux; sign(T(2,1)./sin(joint5))*pi-joint4_aux];
             % when joint4 is +-pi/2, there are repeatable solutions
             if(round(cos(joint4_aux(1,1)), 2)==0)
                 joint4_aux = joint4_aux.*eye(2);
@@ -193,7 +201,7 @@ function joints = compute_joints456(T3_6, joint123)
             joint4_flag = round(T(3,1) - (-cos(joint4_aux).*sin(joint5)), 2) == 0;
             joint4 = sum(joint4_aux.*joint4_flag,1);    % only one option per column
 
-            joint6_aux = asin( round(T(1,2)./sin(joint5),4) );  joint6_aux = [joint6_aux; sign(joint6_aux)*pi-joint6_aux];
+            joint6_aux = asin( round(T(1,2)./sin(joint5),4) );  joint6_aux = [joint6_aux; sign(T(1,2)./sin(joint5))*pi-joint6_aux];
             % when joint6 is +-pi/2, there are repeatable solutions
             if(round(cos(joint6_aux(1,1)), 2)==0)
                 joint6_aux = joint6_aux.*eye(2);
@@ -304,16 +312,16 @@ function y = WrapToPi(angle)
     y = angle;
 end
 
-% each pair of angles has to be displayed in columns
+% each pair of angles has to be displayed in rows
 function n = my_Kmeans(solution)
     
     % consedering a threshold of 1
     threshold = 1;
-    len = size(solution, 2);
+    len = size(solution, 1);
     K_solution = ones(len,1);
-    for i = 1:len
+    for i = 1:len-1
         for j = (i+1):len
-            dist = vecnorm(angdiff(solution(:,i),solution(:,j))); % compare two lines
+            dist = vecnorm(angdiff(solution(i,:),solution(j,:))); % compare two lines
             if(dist < threshold)    % same solution
                 K_solution(i) = 0;
                 break;  % return to the main for
@@ -322,6 +330,6 @@ function n = my_Kmeans(solution)
     end
     n = sum(K_solution);
     disp("The number of groups of solution of the inverse kinematics for this specific Robot is " + num2str(n));
-    solution_group = solution(:, logical(K_solution));
+    solution_group = solution(logical(K_solution),:);
 end
 
