@@ -1,13 +1,13 @@
-function output = direct_transform(A, constraints)
+function output = direct_kinematics(A, constraints)
 
     if nargin < 1
         kinematics
         return
+    elseif nargin < 2
+        constraints = false;
     end
-
-    % physical limits
-    
-    if(constraints)
+  
+    if(constraints) % physical limits
         range_rotation = [-175, 175
                           -36.7, 90
                           -80, 90
@@ -16,18 +16,17 @@ function output = direct_transform(A, constraints)
                           -147.5, 147.5]*pi/180;    
 
         %   bound to max angle rotation
-
         A1 = bound_angle(A(1), range_rotation(1,1), range_rotation(1,2));
         A2 = bound_angle(A(2), range_rotation(2,1), range_rotation(2,2));
         A3 = bound_angle(A(3), range_rotation(3,1), range_rotation(3,2));
         A4 = bound_angle(A(4), range_rotation(4,1), range_rotation(4,2));
         A5 = bound_angle(A(5), range_rotation(5,1), range_rotation(5,2));
         A6 = bound_angle(A(6), range_rotation(6,1), range_rotation(6,2));
+        
+    else    % without physical limitations
+        A1 = A(1);  A2 = A(2);  A3 = A(3);  A4 = A(4);  A5 = A(5);  A6 = A(6);
     end
     
-   A1 = A(1);  A2 = A(2);  A3 = A(3);  A4 = A(4);  A5 = A(5);  A6 = A(6);
-    %%
-
     F1_to_F0 = [cos(A1),    -sin(A1),  0,   0;
                 sin(A1),    cos(A1),   0,   0;
                 0,          0,         1,   103;
@@ -70,36 +69,38 @@ function output = direct_transform(A, constraints)
       
       orientation = get_orientation(Total_T_matrix);
       
-      output = [coords(1:3);orientation'];   % to mm
+      output = [coords(1:3);orientation'];
 end
 
+% Computes de Euler Angles in Z-Y-Z convenction
 function out = get_orientation(matrix)
     
     alpha = 0;                                                          % Z
-    beta = atan2(sqrt(matrix(1,3)^2 + matrix(2, 3)^2), matrix(3,3));    % Y
-    gama = 0;                                                           % Z
+    beta = atan2(sqrt(matrix(1,3)^2 + matrix(2,3)^2), matrix(3,3));     % Y
+    gamma = 0;                                                           % Z
     
+
     if round(beta,3) == round(pi/2,3)
-        gama = atan2(matrix(2,1), matrix(1,1));
-        
+        gamma = atan2(matrix(2,1), matrix(1,1));
+
     elseif round(beta,3) == round(-pi/2,3)
-        gama = -atan2(matrix(2,1), matrix(1,1));
-        
+        gamma = -atan2(matrix(2,1), matrix(1,1));
+
     elseif round(beta,3) == 0
-        gama = 0;
+        gamma = 0;
         alpha = cos(beta)*atan2(matrix(2,1), matrix(1,1)); % cos(beta) -> ±1
     else
         alpha = atan2(matrix(2,3)/sin(beta), matrix(1,3)/sin(beta));
-        gama = atan2(matrix(3,2)/sin(beta), -matrix(3,1)/sin(beta));
+        gamma = atan2(matrix(3,2)/sin(beta), -matrix(3,1)/sin(beta));
     end
-    
-    % make pi and -pi to 0
-    f = @(x) x*(round(cos(x),3) ~= -1);
-        
-    out = [f(alpha) f(beta) f(gama)];
+
+    matrix_test = rotz(alpha*180/pi)*roty(beta*180/pi)*rotz(gamma*180/pi);
+
+      
+    out = [alpha beta gamma];
 end
 
-%limit the joint angles to the constraints
+% Limits the joint angles to the constraints (maximum values)
 function value = bound_angle(x, m, M)
 
     x = round(x,4);

@@ -1,4 +1,4 @@
-function [best_solution_sorted, error_vec_sorted, has_solutions] = inverse_transform(O)
+function best_solution_sorted = inverse_kinematics(O)
 
     if nargin < 1
         kinematics
@@ -6,68 +6,104 @@ function [best_solution_sorted, error_vec_sorted, has_solutions] = inverse_trans
     end
     
     threshold = 0.1; % rad  
-    trials = -pi:threshold:pi;    % range angles
+    trials = -pi:threshold:pi-threshold;    % range angles
 
 
     error_vec = zeros(1,0);
-    error_vec_total = zeros(1,0);
     best_solution = zeros(6,0);
-    
+    weight_solution = zeros(1,0);
+
     count = 0;
     figure;hold on
-
+    
+    % The beginning of the brute force method, each iteration is for a
+    % different value of theta6
     for i = trials
+        try
+            
+            [P0_5, T0_6] = get_joint_position_five(O, i);   % new guess for joint6 angle
 
-        [P0_5, T0_6] = get_joint_position_five(O, i);   % new guess for joint6 angle
-        
-        joint123 = get_planar_geometry(P0_5(1), P0_5(2), P0_5(3)-10.3-8);
+            % compute the first 3 joints angles(each column is a solution with
+            % the 1st line for theta1, 2nd for theta 2 and the 3rd for theta3 )
+            % [3x4] matrix
+            joint123 = get_planar_geometry(P0_5(1), P0_5(2), P0_5(3)-103-80);
 
-        T0_3 = compute_T0_3(joint123);
-        T3_6 = compute_T3_6(T0_3, T0_6);
-        joints6dof = compute_combinations(T3_6, joint123);  % get available solutions ( 8 preferable )
-        
-        joints6dof = get_real_movements(joints6dof, true);
-        
-        plot([count count], [0 pi], 'r');
+            % compute T3_6 matrix [4x4x4] matrix
+            T0_3 = compute_T0_3(joint123);
+            T3_6 = compute_T3_6(T0_3, T0_6);
+
+            % get all the possible combinations of angles(8 solutions) [6x8]
+            % matrix
+            joints6dof = compute_joints456(T3_6, joint123);  % get available solutions ( 8 preferable )
+
+            % discard the imaginary solutions
+            joints6dof = get_real_movements(joints6dof, false);
+
+            plot([count count], [0 pi], 'r');
+            % calculate the error of the computed solutions
+        catch
+            disp("Error was found. Possible a lost imaginary solution. :(")
+            close all
+            best_solution_sorted = zeros(6,0);
+            return
+        end
         for j = 1:size(joints6dof,2)
             
             error = abs(angdiff(i,joints6dof(6,j)));
-            error_vec_total = [error_vec_total error];
             
-            % store the best values
-            if error <= threshold
+            dir_kin = direct_kinematics(joints6dof(:,j));
+            dir_kin_diff = vecnorm(O(1:3)-dir_kin(1:3));
+            
+            % store the best values, error in theta6 under threshold,
+            % position error under 2mm
+            if error <= threshold && dir_kin_diff < 1
                 error_vec = [error_vec error];
                 best_solution = [best_solution joints6dof(:,j)];
+                
+                % compute the best solution
+                weight_solution = [weight_solution dir_kin_diff];
             end
             
+            % bonus point research
+            error_vec = [error_vec error];
             plot(count, error, '*b');
             count = count+1;
         end
     end
     
+    plot([0 count-1], [threshold threshold], 'k');
     xlim([0 count-1]);
     ylim([0 pi]);
     yticks([0 pi]);
     xlabel("iteration")
     ylabel("error [rad]")
     
-    figure;
-    error_vec_total = reshape(error_vec_total, 8, []);
-    plot(trials, error_vec_total);
-    legend()
-    
-    [error_vec_sorted, order] = sort(best_solution(6,:));  % sort by the theta 6
+    [error_vec_sorted, order] = sort(weight_solution);  % sort by closest xyz
     best_solution_sorted = best_solution(:,order);
     error_vec_sorted = error_vec_sorted'; % column vector
     has_solutions = logical(size(best_solution_sorted,2));
-end
+    
+    if ~has_solutions
+    disp("There are no available solutions!");
+    return
+    end
 
-%% compute fifth joint position
+    disp("Found at least " + num2str(size(best_solution_sorted,2)) + " option.");
+    disp("Best inverse kinematic solution with " + num2str(error_vec_sorted(1)) + " norm error.");
+
+    disp("Best solution :");
+    disp(best_solution_sorted(:,1));
+    
+    % bonus point
+    n = my_Kmeans(best_solution);
+    end
+
+%% computes fifth joint position matrix and the end-effector coordinates in the reference 
 function [P0_5, T0_6] = get_joint_position_five(O, joint6_init)
     
     x = O(1); y = O(2); z = O(3);
   
-    P0_6 = 0.1*[ x y z ]';  % to cm
+    P0_6 = [ x y z ]'; 
     
     ca = cos(O(4)); sa = sin(O(4));
     cb = cos(O(5)); sb = sin(O(5));
@@ -77,18 +113,18 @@ function [P0_5, T0_6] = get_joint_position_five(O, joint6_init)
                 sa*cb*cg+ca*sg,   -sa*cb*sg+ca*cg,    sa*sb
                 -sb*cg,           sg*sb,              cb    ];
     
-    P5_6 = [2.37 0 -0.55]';
+    P5_6 = [23.7 0 -5.5]';
 
     R5_6 = [1,  0,                  0
             0,  cos(joint6_init),   -sin(joint6_init)  
             0,  sin(joint6_init),   cos(joint6_init)];
         
-    P0_5 = P0_6 - (R0_6/R5_6)*P5_6;
+    P0_5 = P0_6 - (R0_6*R5_6')*P5_6;
     
     T0_6 = [[R0_6; zeros(1,3)], [P0_6; 1] ];
 end
 
-%% draw T0_3 matrix
+%% computes T0_3 matrix for each solution (4)
 function T0_3 = compute_T0_3(joint123)
     
     T0_3 = zeros(4,4,size(joint123,2));
@@ -96,29 +132,29 @@ function T0_3 = compute_T0_3(joint123)
     for i = 1:size(T0_3,3)
         A1 = joint123(1,i);   A2 = joint123(2,i);   A3 = joint123(3,i);
 
-        F0_to_F1 = [cos(A1),    -sin(A1),  0,   0;
+        F1_to_F0 = [cos(A1),    -sin(A1),  0,   0;
                     sin(A1),    cos(A1),   0,   0;
-                    0,          0,         1,   10.3;
+                    0,          0,         1,   103;
                     0,          0,         0,   1
                    ];
 
-        F1_to_F2 = [cos(A2),   0,  sin(A2),    0;
+        F2_to_F1 = [cos(A2),   0,  sin(A2),    0;
                     0,         1,  0,          0;
-                    -sin(A2),  0,	cos(A2),    8;
+                    -sin(A2),  0,	cos(A2),    80;
                     0,         0,	0,          1
                    ];
 
-        F2_to_F3 = [cos(A3),   0   sin(A3),	0;
+        F3_to_F2 = [cos(A3),   0   sin(A3),	0;
                     0,         1,  0,          0;
-                    -sin(A3),  0,  cos(A3),    21;
+                    -sin(A3),  0,  cos(A3),    210;
                     0,         0,  0,          1
                    ];
 
-        T0_3(:,:,i) = F0_to_F1 * F1_to_F2 * F2_to_F3;
+        T0_3(:,:,i) = F1_to_F0 * F2_to_F1 * F3_to_F2;
     end
 end
 
-%% draw T3_6 matrix
+%% computes T3_6 matrix for each solution (4)
 function T3_6 = compute_T3_6(T0_3, T0_6)
     
     T3_6 = zeros(4,4,size(T0_3,3));
@@ -128,66 +164,44 @@ function T3_6 = compute_T3_6(T0_3, T0_6)
     end
 end
 
-%% compute 6DOF orientation and translation joints
-function joints = compute_combinations(T3_6, joint123)
+%% computes 6DOF orientation and translation joints
+function joints = compute_joints456(T3_6, joint123)
     
     joints = zeros(6,0);    % init declaration
     
     for i=1:size(T3_6,3)
-        
-        
         T = T3_6(:,:,i);
         joint5 = round(acos(T(1,1)), 4);   joint5 = [-joint5, joint5];
         
         % if else - Compute the available positions to joint456
         % in case there is only a rotation in x
-        if round(T(1,1),4) == 1
+       if round(T(1,1),4) == 1
             ang = atan2(T(3,2),T(2,2));   % Rotx --->>> T3_6(3,2) == sin()  T3_6(2,2) == cos()
-            
-            % force maximum rotation in joint4
-            if abs(ang) > 175*pi/180
-                joint4 = sign(ang)*(175*pi/180);
-                joint6 = sign(ang)*(abs(ang) - 175*pi/180);
-                joint456_4 = [joint4; 0; joint6]
 
-            else
-                joint456_4 = [ang; 0; 0];
-            end
-            
-            % force maximum rotation in joint6
-            if abs(ang) > 147.5*pi/180
-                joint4 = sign(ang)*(147.5*pi/180);
-                joint6 = sign(ang)*(abs(ang) - 147.5*pi/180);
-                joint456_6 = [joint4; 0; joint6]
-
-            else
-                joint456_6 = [ang; 0; 0];
-            end
-        
+            joint456_4 = [ang; 0; 0];
+            joint456_6 = [0; 0; ang];
             joint456 = [joint456_4, joint456_6];
-            
-        else
-
+       else
             joint4_aux = asin( round(T(2,1)./sin(joint5),4) );  joint4_aux = [joint4_aux; sign(joint4_aux)*pi-joint4_aux];
-            % when joint4 is ±pi/2, there are repeatable solutions
+            % when joint4 is +-pi/2, there are repeatable solutions
             if(round(cos(joint4_aux(1,1)), 2)==0)
                 joint4_aux = joint4_aux.*eye(2);
             end
-            joint4_flag = round(T(3,1), 2) == round(-cos(joint4_aux).*sin(joint5), 2);
+            joint4_flag = round(T(3,1) - (-cos(joint4_aux).*sin(joint5)), 2) == 0;
             joint4 = sum(joint4_aux.*joint4_flag,1);    % only one option per column
 
             joint6_aux = asin( round(T(1,2)./sin(joint5),4) );  joint6_aux = [joint6_aux; sign(joint6_aux)*pi-joint6_aux];
-            % when joint6 is ±pi/2, there are repeatable solutions
+            % when joint6 is +-pi/2, there are repeatable solutions
             if(round(cos(joint6_aux(1,1)), 2)==0)
                 joint6_aux = joint6_aux.*eye(2);
             end
-            joint6_flag = round(T(1,3), 2) == round(cos(joint6_aux).*sin(joint5), 2);
+            joint6_flag = round(T(1,3) - cos(joint6_aux).*sin(joint5), 2) == 0;
             joint6 = sum(joint6_aux.*joint6_flag,1);
 
             % bound between -pi and pi
-            joint4 = round( wrapToPi(joint4), 4);
-            joint5 = round( wrapToPi(joint5), 4);
-            joint6 = round( wrapToPi(joint6), 4); 
+            joint4 = round( WrapToPi(joint4), 4);
+            joint5 = round( WrapToPi(joint5), 4);
+            joint6 = round( WrapToPi(joint6), 4); 
             
             joint456 = [joint4; joint5; joint6];
         end         
@@ -201,34 +215,38 @@ function joints = compute_combinations(T3_6, joint123)
     end
 end
 
-%% compute the linear geometry
+%% computes the linear geometry
 function angles = get_planar_geometry(x, y, z)
-
+        
+    % ignore imprecisions of 1e-6mm.
+    R = @(x) round(x,6);
+    x = R(x);   y = R(y);   z = R(z);
+    
     % better notation
+    l2 = 210;
+    l34 = sqrt(30^2 + (41.5+180)^2);%    z = l2+l34; x = 0, y=0;
     xy = sqrt(x^2+y^2); xyz = sqrt(xy^2 + z^2);
-    l2 = 21;
-    l3 = sqrt(3^2 + (4.15+18)^2);
     
     beta = atan2(z, [-xy; xy]);    % angle between end effort and ground Q1
     
-    phi = acos( (l2^2 + xyz^2 - l3^2 )/(2*l2*xyz) ); % angle between beta and length 1
-    
+    phi = acos( round((l2^2 + xyz^2 - l34^2)/(2*l2*xyz),3) ); % angle between beta and length 1
+
     % coordinates in 2D
-    theta3 = acos( (xy.^2 + z^2 - l2^2 -l3^2)/(2*l2*l3) ) ; theta3 = [-theta3 theta3];   
+    theta3 = acos( round((xy.^2 + z^2 - l2^2 -l34^2)/(2*l2*l34), 3) ) ; theta3 = [-theta3 theta3];   
     theta2 = beta + phi*(2*(theta3 < 0)-1); theta2 = [theta2(1,:), theta2(2,:)];
     theta3 = [theta3 theta3];
-   
-%      round(xy,3) == round(l2*cos(theta2) + l3*cos(theta2+theta3), 3)
-%      round(z,3) == round(l2*sin(theta2) + l3*sin(theta2+theta3), 3)
 
     % Note that the rotation angles are symetric from 2D to 3D
     joint2 = pi/2 - theta2;
-    joint3 = -atan(22.15/3) - theta3;
+    joint3 = -atan(221.5/30) - theta3;
     
     % bound between -pi and pi
-    joint1 = [ atan2(-y,-x) atan2(-y,-x) atan2(y,x) atan2(y,x) ]; 
-    joint2 = round( wrapToPi(joint2), 4);
-    joint3 = round( wrapToPi(joint3), 4);
+    if(atan2(-y,-x) == atan2(y,x))
+        disp("Singularity at sight! multiple solutions for $\theta_1$");
+    end
+    joint1 = [ atan2(-y,-x) atan2(-y,-x) atan2(y,x) atan2(y,x) ];
+    joint2 = round( WrapToPi(joint2), 4);
+    joint3 = round( WrapToPi(joint3), 4);
     
     angles = [joint1; joint2; joint3];  % each solution per column
 end
@@ -239,19 +257,12 @@ function joints_real = get_real_movements(joints_all, constrains)
     if nargin < 2
         constrains = true;
     end
-    
-    
-    real_solutions = zeros(size(joints_all,2), 1);  % has to be 8x1!
 
-    for i =1:size(real_solutions,1)
-        real_solutoins(i) = isreal(joints_all(:,i));
-    end
-    
-    if(imag(joints_all) | sum(real_solutoins)~=8)
-        disp("Line 216! By the order of fucking Peaky Blinders!! Tommy says: " + sum(real_solutoins));
+    for i =1:size(joints_all,2)
+        real_solutions(i) = isreal(joints_all(:,i));
     end
 
-    joints_real = joints_all(:,real_solutoins);
+    joints_real = joints_all(:,logical(real_solutions));
     
     if ~constrains
         return
@@ -281,3 +292,33 @@ function joints_real = get_real_movements(joints_all, constrains)
     joints_real = joints_real(:,joint_flag);
 
 end
+
+function y = WrapToPi(angle)
+    if(isreal(angle))
+        y = wrapToPi(angle);
+        return
+    end
+    y = angle;
+end
+
+% each pair of angles has to be displayed in columns
+function n = my_Kmeans(solution)
+    
+    % consedering a threshold of 1
+    threshold = 2;
+    len = size(solution, 2);
+    K_solution = ones(len,1);
+    for i = 1:len
+        for j = (i+1):len
+            dist = vecnorm(angdiff(solution(:,i),solution(:,j))); % compare two lines
+            if(dist < threshold)    % same solution
+                K_solution(i) = 0;
+                break;  % return to the main for
+            end
+        end
+    end
+    n = sum(K_solution);
+    disp("The number of groups of solution of the inverse kinematics for this specific Robot is " + num2str(n));
+    solution_group = solution(:, logical(K_solution));
+end
+
