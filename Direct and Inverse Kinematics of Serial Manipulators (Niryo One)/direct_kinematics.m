@@ -6,6 +6,9 @@ function output = direct_kinematics(A, constraints)
     elseif nargin < 2
         constraints = false;
     end
+    
+    % reshape to column vector
+    A = reshape(A, 6, 1);
   
     if(constraints) % physical limits
         range_rotation = [-175, 175

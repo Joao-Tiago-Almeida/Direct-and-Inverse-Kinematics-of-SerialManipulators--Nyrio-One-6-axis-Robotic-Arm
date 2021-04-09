@@ -5,6 +5,9 @@ function best_solution_sorted = inverse_kinematics(O)
         return
     end
     
+    % reshape to column vector
+    O = reshape(O, 6, 1);
+    
     threshold = 0.1; % rad  
     trials = -pi:threshold:pi-threshold;    % range angles
 
@@ -305,7 +308,7 @@ end
 function n = my_Kmeans(solution)
     
     % consedering a threshold of 1
-    threshold = 2;
+    threshold = 1;
     len = size(solution, 2);
     K_solution = ones(len,1);
     for i = 1:len

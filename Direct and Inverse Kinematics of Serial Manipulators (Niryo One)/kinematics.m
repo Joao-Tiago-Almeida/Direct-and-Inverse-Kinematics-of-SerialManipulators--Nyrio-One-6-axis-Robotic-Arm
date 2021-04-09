@@ -1,6 +1,6 @@
 %% direct Kinematics
 
-a_dk =  [0 0 -atan(22.15/3) 0 0 0];
+a_dk =  [0 0 atan(3/22.15) 0 0 0];
 %a_dk =  [-pi/4 pi/3 -pi/6 pi/2 pi/3 pi/4];
 %a_dk =  [0 0 0 0 0 0];
 
