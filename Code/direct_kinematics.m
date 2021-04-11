@@ -80,7 +80,7 @@ function out = get_orientation(matrix)
     
     alpha = 0;                                                          % Z
     beta = atan2(sqrt(matrix(1,3)^2 + matrix(2,3)^2), matrix(3,3));     % Y
-    gamma = 0;                                                           % Z
+    gamma = 0;                                                          % Z
     
 
     if round(beta,3) == round(pi/2,3)

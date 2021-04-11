@@ -74,20 +74,7 @@ function best_solution_sorted = inverse_kinematics(O)
             count = count+1;
         end
     end
-    
-    plot([0 count-1], [threshold threshold], 'k', "LineWidth", 2);
-    xlim([0 count-1]);
-    ylim([0 pi]);
-    xticks([0 count/4 count/2 3*count/4 count-1]);
-    xticklabels({'-\pi','-\pi/2', '0','\pi/2','\pi'})
-    yticks([0 threshold pi]);
-    yticklabels({'-\pi','\pi/18','\pi'})
-    xlabel("\Theta_6 ", "FontSize", 20)
-    ylabel("error [rad]", "FontSize", 20)
-    legend(["\Theta_6", "angdiff(\Theta_6, \theta_6)"], "FontSize", 16, "Location", "Best")
-    f.CurrentAxes.FontSize = 16;
-    t = title("Diference between computed \theta_6 and tested value (\Theta_6)", "FontSize", 16);
-    
+ 
     [error_vec_sorted, order] = sort(weight_solution);  % sort by closest xyz
     best_solution_sorted = best_solution(:,order)';
     error_vec_sorted = error_vec_sorted'; % column vector
@@ -96,6 +83,7 @@ function best_solution_sorted = inverse_kinematics(O)
     if ~has_solutions
     disp("There are no available solutions!");
     best_solution_sorted = zeros(0,6);
+    close all
     return
     end
 
@@ -107,6 +95,20 @@ function best_solution_sorted = inverse_kinematics(O)
     
     % bonus point
     n = my_Kmeans(best_solution_sorted);
+    
+    % plot error evolution
+    plot([0 count-1], [threshold threshold], 'k', "LineWidth", 2);
+    xlim([0 count-1]);
+    ylim([0 pi]);
+    xticks([0 count/4 count/2 3*count/4 count-1]);
+    xticklabels({'-\pi','-\pi/2', '0','\pi/2','\pi'})
+    yticks([0 threshold pi]);
+    yticklabels({'0','\pi/36','\pi'})
+    xlabel("\Theta_6 ", "FontSize", 20)
+    ylabel("error [rad]", "FontSize", 20)
+    legend(["\Theta_6", "angdiff(\Theta_6, \theta_6)"], "FontSize", 16, "Location", "Best")
+    f.CurrentAxes.FontSize = 16;
+    t = title("Diference between computed \theta_6 and tested value (\Theta_6)", "FontSize", 16);
     end
 
 %% computes fifth joint position matrix and the end-effector coordinates in the reference 
@@ -314,7 +316,8 @@ end
 
 % each pair of angles has to be displayed in rows
 function n = my_Kmeans(solution)
-    
+    % put the best solutions at the end
+      solution = flip(solution);
     % consedering a threshold of 1
     threshold = 1;
     len = size(solution, 1);
@@ -332,4 +335,3 @@ function n = my_Kmeans(solution)
     disp("The number of groups of solution of the inverse kinematics for this specific Robot is " + num2str(n));
     solution_group = solution(logical(K_solution),:);
 end
-
