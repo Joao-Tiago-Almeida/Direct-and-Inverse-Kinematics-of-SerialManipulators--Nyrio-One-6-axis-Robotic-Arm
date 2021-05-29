@@ -6,4 +6,5 @@ This  paper  presents  the  development  of  a  6-axisrigid body kinematics. A r
 Report: [file](./Direct_and_Inverse_Kinematics_of_Serial_Manipulators_(Nyrio_One_6-axis_Robotic_Arm).pdf)
 
 Software's Grade: 19/20
+
 Rports' Grade: 16/20
