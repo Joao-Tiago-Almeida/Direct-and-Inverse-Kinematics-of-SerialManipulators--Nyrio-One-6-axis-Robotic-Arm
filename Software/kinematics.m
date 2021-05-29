@@ -17,3 +17,5 @@ try
 catch
     disp("Install the Robotic ToolBox properly");
 end
+
+license('inuse')
